@@ -9,11 +9,11 @@ import (
 
 func TestEnvelopeJSONRoundTrip(t *testing.T) {
 	e := Envelope{
-		ID:      "env_test",
-		Version: "1",
-		Issuer:  Party{Agent: "support-agent", Version: "2.3"},
+		ID:        "env_test",
+		Version:   "1",
+		Issuer:    Party{Agent: "support-agent", Version: "2.3"},
 		Recipient: Party{Agent: "billing-agent"},
-		Purpose: "customer_support_refund",
+		Purpose:   "customer_support_refund",
 		Resources: map[string][]string{
 			"orders":    {"48319"},
 			"customers": {"cus_8291"},
@@ -24,7 +24,7 @@ func TestEnvelopeJSONRoundTrip(t *testing.T) {
 		Approvals: []Approval{
 			{Condition: "refund.amount > 500", RequiredRole: "refund_manager"},
 		},
-		Delegation: Delegation{MaxDepth: 2, CurrentDepth: 1, MayExpandAuthority: false},
+		Delegation:     Delegation{MaxDepth: 2, CurrentDepth: 1, MayExpandAuthority: false},
 		ExpiresAt:      time.Date(2026, 9, 15, 1, 0, 0, 0, time.UTC),
 		PolicyVersion:  "refund-policy-v8",
 		ParentEnvelope: "env_parent",
