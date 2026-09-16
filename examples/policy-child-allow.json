@@ -1,0 +1,45 @@
+{
+  "version": "1",
+  "issuer": {
+    "agent": "billing-agent"
+  },
+  "recipient": {
+    "agent": "notification-agent"
+  },
+  "purpose": "customer_support_refund",
+  "resources": {
+    "orders": [
+      "48319"
+    ],
+    "customers": [
+      "cus_8291"
+    ]
+  },
+  "allowed_actions": [
+    "orders.read"
+  ],
+  "denied_actions": [
+    "customers.delete",
+    "customers.update_identity",
+    "payments.export"
+  ],
+  "data_classes": [
+    "customer_pii",
+    "payment_metadata"
+  ],
+  "approvals": [
+    {
+      "condition": "refund.amount > 300",
+      "required_role": "refund_manager"
+    }
+  ],
+  "delegation": {
+    "max_depth": 2,
+    "current_depth": 1,
+    "may_expand_authority": false
+  },
+  "expires_at": "2098-01-01T00:00:00Z",
+  "policy_version": "refund-policy-v8",
+  "id": "env_child",
+  "parent_envelope": "env_parent"
+}
