@@ -69,3 +69,25 @@ func TestVerifyFailsOnMissingSignature(t *testing.T) {
 		t.Fatalf("expected verification to fail on missing signature")
 	}
 }
+
+func TestMalformedKeyLengthsReturnErrors(t *testing.T) {
+	for _, size := range []int{0, 1, ed25519.PrivateKeySize - 1, ed25519.PrivateKeySize + 1} {
+		if _, err := Sign(testEnvelope(), make(ed25519.PrivateKey, size)); err == nil {
+			t.Fatalf("accepted private key of size %d", size)
+		}
+	}
+	e := testEnvelope()
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.Signature, err = Sign(e, priv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, size := range []int{0, 1, ed25519.PublicKeySize - 1, ed25519.PublicKeySize + 1} {
+		if err := Verify(e, make(ed25519.PublicKey, size)); err == nil {
+			t.Fatalf("accepted public key of size %d", size)
+		}
+	}
+}

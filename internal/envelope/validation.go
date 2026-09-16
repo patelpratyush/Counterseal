@@ -42,7 +42,7 @@ func ValidateStructure(e Envelope) error {
 
 // ValidateExpiration checks that e.ExpiresAt has not passed relative to now.
 func ValidateExpiration(e Envelope, now time.Time) error {
-	if e.ExpiresAt.Before(now) {
+	if !e.ExpiresAt.After(now) {
 		return fmt.Errorf("%w: expired at %s", ErrExpired, e.ExpiresAt.Format(time.RFC3339))
 	}
 	return nil

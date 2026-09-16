@@ -8,6 +8,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 )
@@ -23,6 +24,10 @@ func Generate(prefix string) error {
 		return fmt.Errorf("write private key: %w", err)
 	}
 	if err := writeBase64(prefix+".pub", pub); err != nil {
+		// Only remove the private file created by this attempt.
+		if cleanupErr := os.Remove(prefix + ".priv"); cleanupErr != nil {
+			return fmt.Errorf("write public key: %w (private key cleanup: %v)", err, cleanupErr)
+		}
 		return fmt.Errorf("write public key: %w", err)
 	}
 	return nil
@@ -53,7 +58,16 @@ func LoadPublic(path string) (ed25519.PublicKey, error) {
 }
 
 func writeBase64(path string, b []byte) error {
-	return os.WriteFile(path, []byte(base64.StdEncoding.EncodeToString(b)), 0600)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		return err
+	}
+	_, writeErr := f.WriteString(base64.StdEncoding.EncodeToString(b))
+	closeErr := f.Close()
+	if writeErr != nil || closeErr != nil {
+		return errors.Join(writeErr, closeErr, os.Remove(path))
+	}
+	return nil
 }
 
 func readBase64(path string) ([]byte, error) {

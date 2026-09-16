@@ -12,6 +12,9 @@ import (
 // returns it base64-encoded. The envelope's own Signature field is not
 // part of the signed payload.
 func Sign(e Envelope, priv ed25519.PrivateKey) (string, error) {
+	if len(priv) != ed25519.PrivateKeySize {
+		return "", fmt.Errorf("invalid private key size %d", len(priv))
+	}
 	b, err := CanonicalBytes(e)
 	if err != nil {
 		return "", err
@@ -24,6 +27,9 @@ func Sign(e Envelope, priv ed25519.PrivateKey) (string, error) {
 // Verify checks that e.Signature is a valid Ed25519 signature over
 // SHA-256(CanonicalBytes(e)) for the given public key.
 func Verify(e Envelope, pub ed25519.PublicKey) error {
+	if len(pub) != ed25519.PublicKeySize {
+		return fmt.Errorf("invalid public key size %d", len(pub))
+	}
 	if e.Signature == "" {
 		return errors.New("envelope has no signature")
 	}

@@ -64,3 +64,16 @@ func TestValidateExpirationAcceptsFuture(t *testing.T) {
 		t.Fatalf("expected no error for future expiry, got %v", err)
 	}
 }
+
+func TestExpirationBoundary(t *testing.T) {
+	e := validEnvelope()
+	for _, delta := range []time.Duration{-time.Nanosecond, 0, time.Nanosecond} {
+		err := ValidateExpiration(e, e.ExpiresAt.Add(delta))
+		if delta < 0 && err != nil {
+			t.Fatalf("rejected before expiry: %v", err)
+		}
+		if delta >= 0 && !errors.Is(err, ErrExpired) {
+			t.Fatalf("accepted at/after expiry: %v", err)
+		}
+	}
+}
