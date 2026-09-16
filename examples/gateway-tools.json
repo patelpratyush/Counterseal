@@ -1,0 +1,14 @@
+{
+  "tools": {
+    "refund.create": {
+      "action": "refunds.create",
+      "resources": {"orders": "/order_id"},
+      "data_classes": ["payment_metadata"]
+    },
+    "orders.get": {
+      "action": "orders.read",
+      "resources": {"orders": "/order_id"},
+      "data_classes": ["payment_metadata"]
+    }
+  }
+}
