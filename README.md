@@ -3,7 +3,8 @@
 Authorization inheritance layer for multi-agent AI systems. See `prd.md`
 for the full product spec. Implemented slices include the Obligation Envelope
 core, the monotonic-delegation policy engine with CEL approval conditions,
-and a PostgreSQL-backed control API with scoped approvals and audit records.
+a PostgreSQL-backed control API with scoped approvals and audit records,
+and an MCP tool gateway.
 
 ## Build
 
@@ -27,8 +28,8 @@ go test ./...
 
 ## Status
 
-Envelope core, policy engine, and server/PostgreSQL slices are implemented.
-MCP gateway, agent integration, dashboard, and CI integration remain. See
+Envelope core, policy engine, server/PostgreSQL, and MCP gateway slices are
+implemented. Agent-framework integration, dashboard, and CI integration remain. See
 [policy engine design](docs/design/policy-engine.md) and the
 [server guide](docs/server.md) for rules, setup, and limitations.
 
@@ -75,7 +76,7 @@ and add another requirement instead.
 The Go API `policy.Conditions.RequiredRoles` evaluates CEL conditions for request
 data and returns required roles. Any evaluation error must result in denial.
 The server verifies stored approvals and consumes them on authorization.
-Tool-call forwarding and enforcement at the MCP boundary are the next slice.
+The MCP gateway authorizes tool calls before forwarding them upstream.
 
 ```bash
 go test -race ./...
@@ -103,3 +104,29 @@ caller until identity integration is added.
 
 Run `python3 scripts/test-postgres.py` for the integration suite against a
 disposable local PostgreSQL cluster (requires `initdb` and `pg_ctl` on PATH).
+
+## MCP gateway
+
+See the [gateway guide](docs/gateway.md) for transport configuration, trusted
+resource mappings, identity boundaries, and error behavior.
+
+```bash
+./handoffguard gateway --config examples/gateway-tools.json \
+  --agent billing --envelope env_YOUR_ENVELOPE_ID \
+  -- ./handoffguard demo-mcp
+```
+
+The command serves MCP over stdio. The agent cannot override the configured
+identity or envelope; only mapped and authorized tool calls reach upstream.
+
+Run the guarded-versus-unguarded simulated refund demo against a running API:
+
+```bash
+python3 scripts/demo-gateway.py
+```
+
+Or run the complete CLI demo with a disposable database and API server:
+
+```bash
+python3 scripts/test-postgres.py python3 scripts/smoke-gateway.py
+```

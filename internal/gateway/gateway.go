@@ -10,11 +10,12 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 	"handoffguard/internal/strictjson"
 )
 
@@ -86,14 +87,11 @@ func New(ctx context.Context, upstream Upstream, authorizer Authorizer, config C
 			if err != nil {
 				return nil, err
 			}
-			var schema jsonschema.Schema
-			if err = json.Unmarshal(raw, &schema); err != nil || schema.Type != "object" {
-				return nil, fmt.Errorf("tool %s needs an object input schema", tool.Name)
-			}
-			resolved, err := schema.Resolve(&jsonschema.ResolveOptions{ValidateDefaults: true})
+			resolved, err := compileSchema(raw)
 			if err != nil {
 				return nil, fmt.Errorf("unsupported input schema for %s: %w", tool.Name, err)
 			}
+
 			// No metadata, task extensions, or parameter-header annotations are
 			// propagated. Only tools/call is exposed; all other proxy features are absent.
 			exposed := &mcp.Tool{Name: tool.Name, Title: tool.Title, Description: tool.Description, InputSchema: json.RawMessage(raw), OutputSchema: tool.OutputSchema}
@@ -117,7 +115,7 @@ func New(ctx context.Context, upstream Upstream, authorizer Authorizer, config C
 	return server, nil
 }
 
-func handler(upstream Upstream, authorizer Authorizer, name string, mapping Mapping, schema *jsonschema.Resolved, options Options) mcp.ToolHandler {
+func handler(upstream Upstream, authorizer Authorizer, name string, mapping Mapping, schema *jsonschema.Schema, options Options) mcp.ToolHandler {
 	return func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		ctx, cancel := context.WithTimeout(ctx, options.Timeout)
 		defer cancel()
@@ -139,6 +137,9 @@ func handler(upstream Upstream, authorizer Authorizer, name string, mapping Mapp
 		var arguments map[string]any
 		if err := strictjson.Decode(raw, &arguments); err != nil || arguments == nil {
 			return reject("INVALID_ARGUMENTS", "Provide one JSON object without duplicate keys.")
+		}
+		if !boundedNumbers(arguments) {
+			return reject("INVALID_ARGUMENTS", "Numeric literals exceed supported precision or exponent limits.")
 		}
 		if err := schema.Validate(arguments); err != nil {
 			return reject("INVALID_ARGUMENTS", "Arguments do not match the advertised tool schema.")
@@ -163,6 +164,9 @@ func handler(upstream Upstream, authorizer Authorizer, name string, mapping Mapp
 			sort.Strings(codes)
 			return reject("AUTHORIZATION_DENIED", strings.Join(codes, ", ")+". Request the required scope or approval from the operator.")
 		}
+		if ctx.Err() != nil {
+			return reject("AUTHORIZATION_EXPIRED", "Authorization completed after the call deadline. No tool was forwarded; an approval may have been consumed.")
+		}
 		log.Info("gateway authorized call")
 		result, err := upstream.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: arguments})
 		if err != nil || result == nil {
@@ -186,4 +190,64 @@ func handler(upstream Upstream, authorizer Authorizer, name string, mapping Mapp
 }
 func toolError(message string) *mcp.CallToolResult {
 	return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: message}}}
+}
+
+// Reject external references: tool discovery must not trigger filesystem reads
+// or network requests. Local references within the schema remain supported.
+type denySchemaLoader struct{}
+
+func (denySchemaLoader) Load(string) (any, error) {
+	return nil, fmt.Errorf("external schema references are unsupported")
+}
+func compileSchema(raw []byte) (*jsonschema.Schema, error) {
+	if len(raw) > 256<<10 {
+		return nil, fmt.Errorf("tool schema exceeds 256 KiB")
+	}
+	var document map[string]any
+	if err := strictjson.Decode(raw, &document); err != nil {
+		return nil, err
+	}
+	if !boundedNumbers(document) {
+		return nil, fmt.Errorf("schema numeric limits exceeded")
+	}
+	if document["type"] != "object" {
+		return nil, fmt.Errorf("tool input schema must be an object")
+	}
+	compiler := jsonschema.NewCompiler()
+	compiler.UseLoader(denySchemaLoader{})
+	const location = "https://handoffguard.invalid/tool-schema.json"
+	if err := compiler.AddResource(location, document); err != nil {
+		return nil, err
+	}
+	return compiler.Compile(location)
+}
+
+// Bound rational-number work before schema validation. Very large exponents
+// can otherwise allocate disproportionate memory even in tiny JSON requests.
+func boundedNumbers(value any) bool {
+	switch v := value.(type) {
+	case json.Number:
+		if len(v) > 128 {
+			return false
+		}
+		if index := strings.IndexAny(string(v), "eE"); index >= 0 {
+			exponent, err := strconv.ParseInt(string(v)[index+1:], 10, 32)
+			if err != nil || exponent < -308 || exponent > 308 {
+				return false
+			}
+		}
+	case map[string]any:
+		for _, child := range v {
+			if !boundedNumbers(child) {
+				return false
+			}
+		}
+	case []any:
+		for _, child := range v {
+			if !boundedNumbers(child) {
+				return false
+			}
+		}
+	}
+	return true
 }

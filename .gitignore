@@ -1,1 +1,4 @@
 .worktrees/
+
+/handoffguard
+__pycache__/

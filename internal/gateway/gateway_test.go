@@ -308,3 +308,119 @@ func TestHTTPAuthorizationContract(t *testing.T) {
 		})
 	}
 }
+
+func TestStreamableHTTPUpstream(t *testing.T) {
+	upstream := mcp.NewServer(&mcp.Implementation{Name: "http-test", Version: "1"}, nil)
+	var calls atomic.Int32
+	upstream.AddTool(&mcp.Tool{Name: "refund.create", InputSchema: inputSchema}, func(context.Context, *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		calls.Add(1)
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "http result"}}}, nil
+	})
+	mcpHandler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return upstream }, nil)
+	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer upstream-only-token" {
+			t.Error("upstream credentials missing or wrong")
+			http.Error(w, "unauthorized", 401)
+			return
+		}
+		mcpHandler.ServeHTTP(w, r)
+	}))
+	defer httpServer.Close()
+	transport, err := HTTPTransport(httpServer.URL, "upstream-only-token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	startup, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	session, err := NewUpstreamClient().Connect(startup, transport, nil)
+	cancel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+	proxy, err := New(context.Background(), session, authorizerFunc(func(context.Context, Action) (Authorization, error) { return allow(), nil }), testConfig(), testOptions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	downstream := connect(t, proxy)
+	result := call(t, downstream, map[string]any{"order_id": "48319", "amount": 100})
+	if result.IsError || calls.Load() != 1 {
+		t.Fatal("HTTP upstream call not forwarded")
+	}
+}
+
+func TestPreciseSchemaBoundsAndExternalReferences(t *testing.T) {
+	schema, err := compileSchema([]byte(`{"type":"object","properties":{"amount":{"type":"integer","maximum":9007199254740992}},"required":["amount"]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = schema.Validate(map[string]any{"amount": json.Number("9007199254740993")}); err == nil {
+		t.Fatal("rounded large integer bypassed maximum")
+	}
+	if err = schema.Validate(map[string]any{"amount": json.Number("9007199254740992")}); err != nil {
+		t.Fatal(err)
+	}
+	_, err = compileSchema([]byte(`{"type":"object","properties":{"amount":{"$ref":"file:///etc/passwd"}}}`))
+	if err == nil {
+		t.Fatal("external schema reference accepted")
+	}
+}
+
+func TestContinuationIsNotRetried(t *testing.T) {
+	u := &fakeUpstream{call: func(context.Context, *mcp.CallToolParams) (*mcp.CallToolResult, error) {
+		return &mcp.CallToolResult{InputRequests: mcp.InputRequestMap{}, RequestState: "retry-state"}, nil
+	}}
+	s := proxy(t, u, authorizerFunc(func(context.Context, Action) (Authorization, error) { return allow(), nil }), testOptions())
+	if !call(t, s, map[string]any{"order_id": "48319", "amount": 100}).IsError || u.calls.Load() != 1 {
+		t.Fatal("unsupported continuation was retried")
+	}
+}
+
+func TestURLAndRedirectRestrictions(t *testing.T) {
+	for _, raw := range []string{"http://example.com", "file:///tmp/server", "https://user:secret@example.com", "https://example.com/#fragment"} {
+		if ValidateURL(raw) == nil {
+			t.Fatalf("unsafe URL accepted: %s", raw)
+		}
+	}
+	var called atomic.Int32
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called.Add(1) }))
+	defer target.Close()
+	redirect := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, target.URL, 307) }))
+	defer redirect.Close()
+	a, err := NewHTTPAuthorizer(redirect.URL, testToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = a.Authorize(context.Background(), Action{}); err == nil || called.Load() != 0 {
+		t.Fatal("control token followed redirect")
+	}
+}
+
+func TestNumericWorkBounds(t *testing.T) {
+	for _, n := range []string{"1e999999999", "1e-999999999", strings.Repeat("1", 129)} {
+		if boundedNumbers(map[string]any{"nested": []any{json.Number(n)}}) {
+			t.Fatalf("unbounded number accepted: %s", n)
+		}
+	}
+	for _, n := range []string{"825", "9007199254740993", "0.1", "1e-10"} {
+		if !boundedNumbers(json.Number(n)) {
+			t.Fatalf("ordinary number rejected: %s", n)
+		}
+	}
+}
+
+func TestSDKClientDoesNotRetryContinuation(t *testing.T) {
+	upstream := mcp.NewServer(&mcp.Implementation{Name: "continuation-test", Version: "1"}, nil)
+	var calls atomic.Int32
+	upstream.AddTool(&mcp.Tool{Name: "refund.create", InputSchema: inputSchema}, func(context.Context, *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		calls.Add(1)
+		return &mcp.CallToolResult{InputRequests: mcp.InputRequestMap{}, RequestState: "do-not-retry"}, nil
+	})
+	session := connect(t, upstream)
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "refund.create", Arguments: map[string]any{"order_id": "48319", "amount": 100}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.InputRequests == nil || calls.Load() != 1 {
+		t.Fatalf("automatic continuation retried or lost: calls=%d", calls.Load())
+	}
+}
