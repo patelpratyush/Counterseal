@@ -12,7 +12,7 @@ import tempfile
 import time
 
 
-def main():
+def main(command=None):
     with tempfile.TemporaryDirectory(prefix='hg-gateway-smoke-') as directory:
         root = pathlib.Path(directory)
         binary = root / 'handoffguard'
@@ -38,7 +38,7 @@ def main():
                 else:
                     raise RuntimeError('server startup timed out')
                 env['HANDOFFGUARD_SERVER_URL'] = 'http://' + line.strip().split()[-1]
-                subprocess.run(['python3', 'scripts/demo-gateway.py'], env=env, check=True, timeout=90)
+                subprocess.run(command or ['python3', 'scripts/demo-gateway.py'], env=env, check=True, timeout=180)
             finally:
                 process.send_signal(signal.SIGTERM)
                 try:
@@ -49,7 +49,7 @@ def main():
                     raise
             if process.returncode != 0:
                 raise RuntimeError((root / 'server.log').read_text())
-        print('PASS: CLI gateway demo and graceful server shutdown')
+        print('PASS: integration command and graceful server shutdown')
 
 
 if __name__ == '__main__':

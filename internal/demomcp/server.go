@@ -38,6 +38,18 @@ func New() *mcp.Server {
 		raw, _ := json.Marshal(result)
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(raw)}}, StructuredContent: result}, nil
 	})
+	server.AddTool(&mcp.Tool{Name: "email.send", Description: "Simulate a refund notification; never sends email.", InputSchema: json.RawMessage(`{"type":"object","properties":{"order_id":{"type":"string","minLength":1},"refund_id":{"type":"string","minLength":1}},"required":["order_id","refund_id"],"additionalProperties":false}`)}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		var args struct {
+			OrderID  string `json:"order_id"`
+			RefundID string `json:"refund_id"`
+		}
+		if err := strictjson.Decode(req.Params.Arguments, &args); err != nil || args.OrderID == "" || args.RefundID == "" {
+			return errorResult("order_id and refund_id are required"), nil
+		}
+		result := map[string]any{"order_id": args.OrderID, "refund_id": args.RefundID, "notification_id": "simulated_notification", "simulated": true}
+		raw, _ := json.Marshal(result)
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(raw)}}, StructuredContent: result}, nil
+	})
 	server.AddTool(&mcp.Tool{Name: "payment.export", Description: "Return fake payment data; intentionally omitted from the gateway mapping.", InputSchema: json.RawMessage(`{"type":"object","properties":{},"additionalProperties":false}`)}, func(context.Context, *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "SIMULATED_PAYMENT_DATA"}}}, nil
 	})

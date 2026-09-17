@@ -1,28 +1,39 @@
 # Agent integration checkpoint
 
-Paused at the user's request on branch `feat/agent-integration`.
+The agent integration is implemented on `feat/agent-integration`, atop MCP gateway
+commit `192875b`. The earlier setup checkpoint was `a8a8adc`.
 
-## Completed
+## Implemented
 
-- Created the Python project under `integrations/openai-agents` and resolved dependencies into `uv.lock`.
-- Installed OpenAI Agents SDK 0.22.2 in a local Python 3.12 environment.
-- Added `.venv/` to Git ignores. The virtual environment is not committed.
-- Scoped a cryptography version constraint to Intel macOS to use an available binary wheel.
+- Real OpenAI Agents SDK Support → Billing → Notification workflow.
+- Signed child-envelope issuance before each SDK handoff and a dedicated MCP
+  gateway bound to each stage's identity and envelope.
+- Narrowing permissions, inherited approval constraints, fixed resource scope,
+  and a notification step gated on a successful refund receipt.
+- Deterministic offline model, optional explicit live model, local sanitized SDK
+  traces, and simulated refund/notification tools.
+- Trusted operator approval option for the exact simulated refund, outside model
+  tools; denial and upstream errors stop the workflow.
+- Session ownership and cleanup, cancellation handling, and duplicate-stage guards.
+- Locked Python dependencies and documented setup, trust boundaries, and limitations.
 
-## Remaining
+## Validation
 
-The integration adapter, agent workflow, notification demo tool, and integration tests have not been implemented. No live model call was made; `OPENAI_API_KEY` was not configured during setup.
-
-Next implement a Support → Billing → Notification workflow using actual Agents SDK handoffs. Each handoff must obtain a signed child envelope from HandoffGuard before switching agents, and each agent must use a gateway session bound to its own envelope. Notification must require a successful simulated refund receipt. Human approval must remain outside model-accessible tools.
-
-Provide a deterministic offline model for testing the real SDK, MCP gateway, and PostgreSQL path, plus an optional live model mode. Keep traces local during offline tests and exclude sensitive payloads. Ensure MCP sessions close in the task that opened them.
-
-## Resume
-
-Restore the environment with:
+`go test ./...` and `go vet ./...` passed. Seven integration tests passed against a
+temporary PostgreSQL database and real API/gateway subprocesses:
 
 ```sh
-uv sync --directory integrations/openai-agents --python 3.12 --frozen
+python3 scripts/test-postgres.py python3 scripts/smoke-agents.py
 ```
 
-The completed MCP gateway is inherited from commit `192875b`. This branch and its predecessor feature branches have not been merged into `master`. Only dependency installation has been checked for this integration; workflow tests remain to be written and run.
+These cover the complete chain and audit, missing approval, explicit approval,
+expanded-authority handoff denial, premature handoff, repeated calls, and cancellation.
+The documented offline `demo.py` command also completed with a valid audit and
+graceful server shutdown. Live model execution has not been tested; no OpenAI API key was configured.
+
+## Next
+
+See [the integration guide](../integrations/openai-agents/README.md) for usage.
+The remaining planned slice is production polish, including dashboard, CI gate,
+Docker Compose, and benchmarks. This feature branch and its predecessor feature
+branches are not merged into `master`.

@@ -4,7 +4,7 @@ Authorization inheritance layer for multi-agent AI systems. See `prd.md`
 for the full product spec. Implemented slices include the Obligation Envelope
 core, the monotonic-delegation policy engine with CEL approval conditions,
 a PostgreSQL-backed control API with scoped approvals and audit records,
-and an MCP tool gateway.
+an MCP tool gateway, and an OpenAI Agents SDK integration.
 
 ## Build
 
@@ -28,8 +28,8 @@ go test ./...
 
 ## Status
 
-Envelope core, policy engine, server/PostgreSQL, and MCP gateway slices are
-implemented. Agent-framework integration, dashboard, and CI integration remain. See
+Envelope core, policy engine, server/PostgreSQL, MCP gateway, and agent-framework
+integration slices are implemented. Dashboard and CI integration remain. See
 [policy engine design](docs/design/policy-engine.md) and the
 [server guide](docs/server.md) for rules, setup, and limitations.
 
@@ -129,4 +129,16 @@ Or run the complete CLI demo with a disposable database and API server:
 
 ```bash
 python3 scripts/test-postgres.py python3 scripts/smoke-gateway.py
+```
+
+## Agent workflow
+
+The [Agents SDK integration](integrations/openai-agents/README.md) runs
+Support → Billing → Notification with signed delegation and a separate MCP
+gateway for each agent. The default model is deterministic and offline; an
+explicit live model option is also available. Refunds and notifications are simulated.
+
+```bash
+uv sync --directory integrations/openai-agents --python 3.12 --frozen
+python3 scripts/test-postgres.py python3 scripts/smoke-agents.py
 ```
