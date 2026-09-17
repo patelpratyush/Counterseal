@@ -206,3 +206,18 @@ Integration tests cover persistence across service instances, key pinning,
 invalid input/authentication, approval scoping/expiry/replay, concurrent use,
 transaction rollback after an injected audit failure, delegation, ancestor
 revocation, sibling isolation, and audit/envelope tampering.
+
+### Dashboard overview
+
+`GET /v1/dashboard/overview?page=1&q=refund&filter=blocked` returns aggregate
+workspace `stats`, a `runs` list, filtered `total`, `page`, and `page_size` (20).
+`filter` is omitted/empty for all runs or `blocked` for runs with any denied
+handoff/tool authorization. Search is a case-insensitive literal substring of
+run ID or root purpose, up to 100 bytes; pages range from 1 to 100000. Runs sort by
+creation time descending, then ID descending. Pagination is an offset view, so
+newly created runs may shift later pages between requests.
+
+Statistics include runs, evaluated handoffs, blocked handoffs, blocked tool actions,
+and distinct policy versions referenced by stored envelopes. They cover the whole
+workspace regardless of search/filter. Policy versions are not an active-policy
+registry. The endpoint requires the same control bearer token as other API routes.

@@ -91,6 +91,7 @@ func (s *Server) Handler() http.Handler {
 		}
 		writeJSON(w, 200, map[string]string{"status": "ok"})
 	})
+	mux.HandleFunc("GET /v1/dashboard/overview", s.wrap(s.overview))
 	mux.HandleFunc("POST /v1/envelopes", s.wrap(s.create))
 	mux.HandleFunc("GET /v1/envelopes/{id}", s.wrap(s.get))
 	mux.HandleFunc("POST /v1/envelopes/{id}/delegate", s.wrap(s.delegate))

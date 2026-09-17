@@ -34,6 +34,6 @@ graceful server shutdown. Live model execution has not been tested; no OpenAI AP
 ## Next
 
 See [the integration guide](../integrations/openai-agents/README.md) for usage.
-The remaining planned slice is production polish, including dashboard, CI gate,
-Docker Compose, and benchmarks. This feature branch and its predecessor feature
+The dashboard is now implemented on `feat/dashboard`; see `dashboard-checkpoint.md`.
+Remaining production polish includes the CI gate, Docker Compose, and benchmarks. This feature branch and its predecessor feature
 branches are not merged into `master`.

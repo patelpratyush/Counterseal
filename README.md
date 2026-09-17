@@ -4,7 +4,7 @@ Authorization inheritance layer for multi-agent AI systems. See `prd.md`
 for the full product spec. Implemented slices include the Obligation Envelope
 core, the monotonic-delegation policy engine with CEL approval conditions,
 a PostgreSQL-backed control API with scoped approvals and audit records,
-an MCP tool gateway, and an OpenAI Agents SDK integration.
+an MCP tool gateway, an OpenAI Agents SDK integration, and a Next.js dashboard.
 
 ## Build
 
@@ -29,7 +29,7 @@ go test ./...
 ## Status
 
 Envelope core, policy engine, server/PostgreSQL, MCP gateway, and agent-framework
-integration slices are implemented. Dashboard and CI integration remain. See
+integration and dashboard slices are implemented. CI integration and deployment polish remain. See
 [policy engine design](docs/design/policy-engine.md) and the
 [server guide](docs/server.md) for rules, setup, and limitations.
 
@@ -142,3 +142,20 @@ explicit live model option is also available. Refunds and notifications are simu
 uv sync --directory integrations/openai-agents --python 3.12 --frozen
 python3 scripts/test-postgres.py python3 scripts/smoke-agents.py
 ```
+
+## Dashboard
+
+The [Next.js dashboard](dashboard/README.md) provides searchable run summaries,
+an interactive React Flow delegation graph, constraint inspection, decision history,
+and audit verification. shadcn/ui components support light/dark themes and mobile layouts.
+
+```bash
+cd dashboard
+npm ci
+cp .env.example .env.local
+# Configure the API connection and separate viewer credentials in .env.local.
+npm run dev -- --hostname 127.0.0.1
+```
+
+The Go control token stays on the Next.js server. Sign in at http://localhost:3000
+with the viewer password. See the dashboard guide for production HTTPS and session limitations.
