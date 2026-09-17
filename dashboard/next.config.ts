@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
+  distDir: process.env.HANDOFFGUARD_LOCAL_PREVIEW === "1" ? ".next-preview" : ".next",
   poweredByHeader: false,
   async headers() {
     return [

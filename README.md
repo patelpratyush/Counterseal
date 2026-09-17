@@ -145,6 +145,19 @@ python3 scripts/test-postgres.py python3 scripts/smoke-agents.py
 
 ## Dashboard
 
+Start the full local preview with one command:
+
+```bash
+./start.sh
+```
+
+It prepares a private PostgreSQL database, starts the Go API, adds a simulated
+agent workflow on the first run, and opens the dashboard. The terminal prints
+your viewer password. Press Ctrl+C to stop; `.local-preview/` preserves your data.
+Requires Go, Node/npm, PostgreSQL tools, Python 3, and uv. Existing API services
+and `dashboard/.env.local` are not modified. Use `./start.sh --help` for options.
+
+
 The [Next.js dashboard](dashboard/README.md) provides searchable run summaries,
 an interactive React Flow delegation graph, constraint inspection, decision history,
 and audit verification. shadcn/ui components support light/dark themes and mobile layouts.

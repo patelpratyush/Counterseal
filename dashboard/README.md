@@ -4,7 +4,33 @@ Next.js App Router, TypeScript, shadcn/ui (Base UI), and React Flow. The overvie
 and run pages render on the server; the graph and inspector load on the client.
 Fonts are bundled locally. The Go control token never enters browser props or storage.
 
-## Run locally
+## One-command local preview
+
+From the repository root:
+
+```sh
+./start.sh
+```
+
+This starts a dedicated PostgreSQL cluster over a private Unix socket, the Go API,
+and Next.js development server. It creates one simulated agent workflow for an
+empty preview database and opens the browser. Use the password printed in the
+terminal. Ctrl+C stops the services; your records, signing key, and credentials
+remain in the Git-ignored `.local-preview/` directory (owner-only permissions).
+The first start installs dependencies; subsequent starts reuse them unless the
+npm lockfile changes. The preview has its own credentials and overrides inherited
+API settings only for its child processes; it does not rewrite `.env.local`.
+
+Prerequisites: Python 3, Go, Node/npm, PostgreSQL tools, and uv. On macOS they can
+be installed with Homebrew. The launcher discovers standard PostgreSQL 18
+Homebrew paths. It uses port 3000 when available and otherwise prints a free port.
+
+Options: `--no-open`, `--no-seed`, `--port 3001`, or `--check` (start, verify, stop).
+Logs are in `.local-preview/`. Run only one preview at a time. This launcher is for
+local development, not production deployment. It uses the existing single-viewer
+session model described below.
+
+## Manual setup
 
 Start the Go API first, following [the server guide](../docs/server.md). Then:
 
