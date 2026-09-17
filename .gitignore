@@ -2,3 +2,5 @@
 
 /handoffguard
 __pycache__/
+
+.venv/
