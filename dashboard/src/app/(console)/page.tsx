@@ -58,17 +58,18 @@ export default async function OverviewPage({
     <>
       <section className="page-heading">
         <div>
-          <span className="eyebrow">YOUR SYSTEM, IN VIEW</span>
-          <h1>
-            Authority overview<span className="heading-dot">.</span>
-          </h1>
-          <p>Follow the work. See where trust holds.</p>
+          <span className="eyebrow">WORKSPACE OVERVIEW</span>
+          <h1>Runs</h1>
+          <p>Inspect agent handoffs, permissions, and blocked decisions.</p>
         </div>
         <Refresh />
       </section>
       <section className="stats-grid" aria-label="Workspace statistics">
         {stats.map((stat, i) => (
-          <article className={`stat-card stat-${i}`} key={stat.label}>
+          <article
+            className={`stat-card stat-${i} ${i === 2 && stat.value > 0 ? "has-blocks" : ""}`}
+            key={stat.label}
+          >
             <div className="stat-label">
               {stat.label}
               <stat.icon size={18} />
@@ -84,7 +85,7 @@ export default async function OverviewPage({
             <h2>
               Workflow runs <span className="count">{data.total}</span>
             </h2>
-            <p>Every delegation leaves a trail.</p>
+            <p>Select a run to inspect its delegation chain.</p>
           </div>
           <div className="filter-tabs">
             <Link href={url(1, "")} aria-current={!filter ? "page" : undefined}>
@@ -118,6 +119,7 @@ export default async function OverviewPage({
               <tr>
                 <th>Run / purpose</th>
                 <th>Entry agent</th>
+                <th>Policy</th>
                 <th>Delegation</th>
                 <th>Decisions</th>
                 <th>Created</th>
@@ -140,6 +142,9 @@ export default async function OverviewPage({
                       <span className="tiny-dot" />
                       {run.agent}
                     </span>
+                  </td>
+                  <td>
+                    <code className="policy-label">{run.policy_version}</code>
                   </td>
                   <td>
                     {run.envelopes} envelopes
@@ -172,11 +177,7 @@ export default async function OverviewPage({
         {!data.runs.length ? (
           <div className="empty-state">
             <GitBranch size={32} />
-            <h3>
-              {q || filter
-                ? "No matching runs"
-                : "Your first run starts the story."}
-            </h3>
+            <h3>{q || filter ? "No matching runs" : "No runs yet"}</h3>
             <p>
               {q || filter
                 ? "Try another search or show all runs."
@@ -204,15 +205,10 @@ export default async function OverviewPage({
           </div>
         </div>
       </section>
-      <section className="overview-note">
-        <span className="note-symbol">↳</span>
-        <p>
-          <strong>Permissions travel with the work.</strong> Open a run to
-          inspect its signed envelopes, inherited constraints, and authorization
-          decisions.
-        </p>
-        <span className="note-tag">MONOTONIC BY DESIGN</span>
-      </section>
+      <p className="overview-note">
+        Counts reflect recorded authorizations. An allowed tool call does not
+        confirm execution.
+      </p>
     </>
   );
 }

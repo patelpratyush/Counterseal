@@ -34,3 +34,16 @@ See [dashboard setup](../dashboard/README.md). Remaining work includes CI gate,
 Docker Compose/deployment polish, and broader benchmarks. Multi-user OIDC and
 production identity hardening are not implemented. This feature stack remains
 unmerged into `master`.
+
+## UI refinement
+
+The workspace now uses a restrained dark navigation rail, neutral content surfaces,
+readable table and inspector text, a compact statistics strip, and direct blocked-run
+navigation. The run list includes policy versions. Promotional headings and taglines
+were removed. Mobile viewers can sign out from the header, and the graph refits when
+its container width changes while retaining manual pan/zoom at a fixed width.
+
+Production build, TypeScript, ESLint, and the real-API browser suite passed after
+these changes. Browser checks also cover blocked-run navigation and verify that all
+graph nodes fit horizontally at mobile width. Refreshed desktop/mobile screenshots
+are at the paths above.

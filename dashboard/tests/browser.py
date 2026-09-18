@@ -101,10 +101,12 @@ def main():
                 expect(page.locator('.login-form [role=alert]')).to_contain_text('Incorrect viewer password')
                 page.get_by_label('Viewer password').fill(env['HANDOFFGUARD_DASHBOARD_PASSWORD'])
                 page.get_by_role('button',name='Open console').click()
-                expect(page.get_by_role('heading',name='Authority overview.')).to_be_visible()
+                expect(page.get_by_role('heading',name='Runs',exact=True)).to_be_visible()
                 settle(page)
                 assert TOKEN not in page.content()
                 page.screenshot(path='/tmp/handoffguard-overview.png',full_page=True)
+                page.get_by_role('link',name='Blocked runs',exact=True).click()
+                expect(page).to_have_url(__import__('re').compile(r'filter=blocked'))
                 page.get_by_label('Search runs').fill('not-a-real-run')
                 page.get_by_role('button',name='Search',exact=True).click()
                 expect(page.get_by_role('heading',name='No matching runs')).to_be_visible()
@@ -126,8 +128,14 @@ def main():
                 expect(page.locator('html')).to_have_class(__import__('re').compile(r'dark'))
                 page.get_by_role('tab',name='Delegation graph').click()
                 page.set_viewport_size({'width':390,'height':844})
+                settle(page)
                 page.screenshot(path='/tmp/handoffguard-mobile.png',full_page=True)
                 assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth'), 'mobile overflow'
+                canvas=page.locator('.graph-canvas').bounding_box()
+                for node in page.locator('.react-flow__node').all():
+                    bounds=node.bounding_box()
+                    assert bounds['x'] >= canvas['x'] - 1, 'graph clipped on the left'
+                    assert bounds['x'] + bounds['width'] <= canvas['x'] + canvas['width'] + 1, 'graph clipped on the right'
                 page.set_viewport_size({'width':1440,'height':1000})
                 page.get_by_role('button',name='Sign out').click()
                 expect(page).to_have_url(url+'/login')

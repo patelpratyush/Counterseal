@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -7,6 +7,7 @@ import {
   Handle,
   Position,
   MarkerType,
+  type ReactFlowInstance,
   type NodeProps,
   type Node,
   type Edge,
@@ -65,6 +66,27 @@ export default function RunGraph({
   selected: string;
   onSelect: (id: string) => void;
 }) {
+  const container = useRef<HTMLDivElement>(null);
+  const flow = useRef<ReactFlowInstance<AgentNode, Edge> | null>(null);
+  useEffect(() => {
+    const element = container.current;
+    if (!element) return;
+    let frame = 0;
+    let width = 0;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width === width) return;
+      width = entry.contentRect.width;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        void flow.current?.fitView({ padding: 0.22, maxZoom: 1, duration: 0 });
+      });
+    });
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, []);
   const { nodes, edges } = useMemo(() => {
     const rows = new Map<number, number>();
     const nodes: AgentNode[] = chain.envelopes.map(
@@ -135,8 +157,11 @@ export default function RunGraph({
     return { nodes, edges };
   }, [chain, selected]);
   return (
-    <div className="graph-canvas" aria-label="Delegation graph">
+    <div ref={container} className="graph-canvas" aria-label="Delegation graph">
       <ReactFlow
+        onInit={(instance) => {
+          flow.current = instance;
+        }}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}

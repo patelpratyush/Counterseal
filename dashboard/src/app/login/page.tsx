@@ -7,14 +7,15 @@ export default function Login() {
         <ShieldCheck size={24} /> HandoffGuard
       </div>
       <section className="login-card">
-        <span className="eyebrow">AUTHORIZATION OBSERVATORY</span>
+        <span className="eyebrow">HANDOFFGUARD CONSOLE</span>
         <h1>
-          Every handoff.
+          Sign in to your
           <br />
-          Accounted for.
+          workspace.
         </h1>
         <p>
-          Follow delegated authority from the first agent to the final decision.
+          Inspect agent runs, delegated permissions, and authorization
+          decisions.
         </p>
         <LoginForm />
         <div className="login-foot">Private workspace · Read-only access</div>

@@ -25,13 +25,15 @@ export default async function RunPage({
               "_",
               " ",
             )}
-            <span className="heading-dot">.</span>
           </h1>
           <p className="mono">{id}</p>
         </div>
         <Refresh />
       </section>
-      <RunDetail key={createHash("sha256").update(JSON.stringify(chain)).digest("hex")} chain={chain} />
+      <RunDetail
+        key={createHash("sha256").update(JSON.stringify(chain)).digest("hex")}
+        chain={chain}
+      />
     </>
   );
 }

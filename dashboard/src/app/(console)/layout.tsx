@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { ShieldCheck, LayoutGrid, ArrowUpRight, LogOut } from "lucide-react";
+import { ShieldCheck, LogOut, LockKeyhole } from "lucide-react";
+import { Suspense } from "react";
+import { Navigation } from "@/components/navigation";
 import { requireSession } from "@/lib/auth";
 import { logout } from "@/app/actions";
 import { ThemeSwitch } from "@/components/theme";
@@ -28,19 +30,22 @@ export default async function Layout({
             Local workspace<small>Authorization console</small>
           </div>
         </div>
-        <span className="nav-label">OBSERVE</span>
-        <nav>
-          <Link href="/" className="nav-item">
-            <LayoutGrid size={17} /> Runs & overview
-            <ArrowUpRight size={14} />
-          </Link>
-        </nav>
+        <span className="nav-label">WORKSPACE</span>
+        <Suspense
+          fallback={
+            <nav>
+              <Link className="nav-item" href="/">
+                All runs
+              </Link>
+            </nav>
+          }
+        >
+          <Navigation />
+        </Suspense>
         <div className="sidebar-bottom">
-          <div className="boundary">
-            <ShieldCheck size={18} />
-            <p>
-              Authority only narrows.<small>Inspect every delegation.</small>
-            </p>
+          <div className="access-note">
+            <LockKeyhole size={14} />
+            <span>Read-only access</span>
           </div>
           <div className="user-row">
             <span className="avatar">OP</span>
@@ -63,17 +68,30 @@ export default async function Layout({
       <div className="console-body">
         <header className="topbar">
           <span>
-            Workspace <span className="slash">/</span> Observability
+            <Link href="/">Workspace</Link> <span className="slash">/</span>{" "}
+            Runs
           </span>
           <div>
-            <span className="viewer-label">VIEWER</span>
+            <span className="viewer-label">
+              <LockKeyhole size={12} /> Viewer
+            </span>
             <ThemeSwitch />
+            <form action={logout} className="mobile-signout">
+              <Button
+                type="submit"
+                variant="ghost"
+                size="icon"
+                aria-label="Sign out"
+              >
+                <LogOut size={17} />
+              </Button>
+            </form>
           </div>
         </header>
         <main id="main">{children}</main>
         <footer className="console-footer">
           <span>
-            HANDOFFGUARD <span className="slash">/</span> Trust, with a record.
+            HandoffGuard <span className="slash">/</span> Authorization console
           </span>
           <span>Decision records · UTC</span>
         </footer>
