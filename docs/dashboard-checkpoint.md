@@ -30,8 +30,9 @@ Screenshots from isolated test records are at `/tmp/handoffguard-overview.png`,
 
 ## Next
 
-See [dashboard setup](../dashboard/README.md). Remaining work includes CI gate,
-Docker Compose/deployment polish, and broader benchmarks. Multi-user OIDC and
+See [dashboard setup](../dashboard/README.md). The [CI gate](ci.md) is now implemented
+on `feat/ci-gate`; hosted execution still requires a GitHub remote. Remaining work
+includes Docker Compose/deployment polish and broader benchmarks. Multi-user OIDC and
 production identity hardening are not implemented. This feature stack remains
 unmerged into `master`.
 

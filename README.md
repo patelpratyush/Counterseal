@@ -172,3 +172,11 @@ npm run dev -- --hostname 127.0.0.1
 
 The Go control token stays on the Next.js server. Sign in at http://localhost:3000
 with the viewer password. See the dashboard guide for production HTTPS and session limitations.
+
+## CI and policy gate
+
+The [CI workflow and reusable policy Action](docs/ci.md) cover the Go backend,
+PostgreSQL, MCP gateway, offline agent workflow, and dashboard browser tests.
+The policy Action rejects authority expansion and weakened approvals, with JSON
+reports and job summaries. Configure the aggregate **CI gate** as a required
+GitHub status check to enforce it before merging.

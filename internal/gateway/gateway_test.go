@@ -174,7 +174,15 @@ func TestUpstreamErrorNoRetryAndSafeLogs(t *testing.T) {
 	}}
 	var logs bytes.Buffer
 	options := testOptions()
-	options.Logger = slog.New(slog.NewJSONHandler(&logs, nil))
+	options.Logger = slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{
+		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+			// Timestamp fractions can contain the test amount (825).
+			if len(groups) == 0 && attr.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+			return attr
+		},
+	}))
 	s := proxy(t, u, authorizerFunc(func(context.Context, Action) (Authorization, error) { return allow(), nil }), options)
 	result := call(t, s, map[string]any{"order_id": "PRIVATE_ORDER_ID", "amount": 825})
 	if !result.IsError || u.calls.Load() != 1 {

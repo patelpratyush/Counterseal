@@ -1,0 +1,53 @@
+name: HandoffGuard policy check
+description: Reject delegated authority expansion between parent and child envelopes.
+branding:
+  icon: shield
+  color: green
+inputs:
+  parent:
+    description: Path to the trusted parent envelope (JSON or YAML).
+    required: true
+  child:
+    description: Path to the proposed child envelope (JSON or YAML).
+    required: true
+  parent-key:
+    description: Optional parent public key; requires child-key too.
+    required: false
+  child-key:
+    description: Optional child public key; requires parent-key too.
+    required: false
+outputs:
+  decision:
+    description: ALLOW, DENY, or ERROR. Only ALLOW succeeds.
+    value: ${{ steps.check.outputs.decision }}
+  report:
+    description: Absolute path to the JSON report on the runner.
+    value: ${{ steps.check.outputs.report }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache: false
+    - name: Build trusted policy checker
+      id: build
+      shell: bash
+      env:
+        HG_ACTION_PATH: ${{ github.action_path }}
+        GOWORK: 'off'
+      run: |
+        directory="$(mktemp -d "$RUNNER_TEMP/hg-policy.XXXXXX")"
+        go -C "$HG_ACTION_PATH" build -trimpath -o "$directory/handoffguard" ./cmd/cli
+        printf 'binary=%s\n' "$directory/handoffguard" >> "$GITHUB_OUTPUT"
+    - name: Evaluate delegated authority
+      id: check
+      shell: bash
+      env:
+        HG_ACTION_PATH: ${{ github.action_path }}
+        HG_BINARY: ${{ steps.build.outputs.binary }}
+        HG_PARENT: ${{ inputs.parent }}
+        HG_CHILD: ${{ inputs.child }}
+        HG_PARENT_KEY: ${{ inputs.parent-key }}
+        HG_CHILD_KEY: ${{ inputs.child-key }}
+      run: python3 "$HG_ACTION_PATH/scripts/policy-action.py"

@@ -1,0 +1,199 @@
+name: HandoffGuard CI
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
+  HANDOFFGUARD_TEST_DATABASE_URL: postgresql://postgres:ci-only-password@127.0.0.1:5432/handoffguard?sslmode=disable
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: handoffguard
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d handoffguard"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Check Go formatting
+        run: |
+          files="$(git ls-files '*.go' | xargs gofmt -l)"
+          if [[ -n "$files" ]]; then
+            printf 'Go formatting required:\n%s\n' "$files"
+            exit 1
+          fi
+      - run: go vet ./...
+      - name: Unit, PostgreSQL, gateway, and race tests
+        run: go test -race -count=1 -coverprofile=coverage.out ./...
+      - name: Bounded adversarial fuzzing
+        run: |
+          go test ./internal/policy -run '^$' -fuzz '^FuzzDelegationCannotExpandAuthority$' -fuzztime 10s
+          go test ./internal/policy -run '^$' -fuzz '^FuzzApprovalThresholdCannotWeaken$' -fuzztime 10s
+      - name: Build CLI
+        run: go build -trimpath -o "$RUNNER_TEMP/handoffguard" ./cmd/cli
+
+  agents:
+    name: Agent and gateway integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: handoffguard
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d handoffguard"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: '0.12.15'
+      - name: Install locked agent dependencies
+        run: uv sync --directory integrations/openai-agents --python 3.12 --frozen
+      - name: Guarded versus unguarded MCP demo
+        run: python3 scripts/smoke-gateway.py
+      - name: Real SDK handoffs, approvals, denials, and cleanup
+        run: python3 scripts/smoke-agents.py
+
+  dashboard:
+    name: Dashboard build and browser tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: handoffguard
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d handoffguard"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: npm ci --prefix dashboard
+      - run: npm run lint --prefix dashboard
+      - run: npm run build --prefix dashboard
+      - name: Install pinned browser test dependencies
+        run: |
+          python3 -m pip install -r dashboard/tests/requirements.txt
+          python3 -m playwright install --with-deps chromium
+      - name: Browser checks against real API and database
+        run: python3 scripts/smoke-dashboard.py
+      - name: Save browser screenshots
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dashboard-screenshots
+          path: /tmp/handoffguard-*.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+  policy:
+    name: Policy Action gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Narrowed delegation must pass
+        id: allow
+        uses: ./
+        with:
+          parent: examples/policy-parent.json
+          child: examples/policy-child-allow.json
+      - name: Expanded delegation must fail
+        id: deny
+        continue-on-error: true
+        uses: ./
+        with:
+          parent: examples/policy-parent.json
+          child: examples/policy-child-deny.json
+      - name: Assert both decisions
+        env:
+          ALLOW_DECISION: ${{ steps.allow.outputs.decision }}
+          DENY_DECISION: ${{ steps.deny.outputs.decision }}
+          DENY_OUTCOME: ${{ steps.deny.outcome }}
+        run: |
+          test "$ALLOW_DECISION" = ALLOW
+          test "$DENY_DECISION" = DENY
+          test "$DENY_OUTCOME" = failure
+      - name: Adapter failure and input handling tests
+        run: python3 scripts/test-policy-action.py
+
+  gate:
+    name: CI gate
+    if: always()
+    needs: [backend, agents, dashboard, policy]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require every job to pass
+        env:
+          BACKEND: ${{ needs.backend.result }}
+          AGENTS: ${{ needs.agents.result }}
+          DASHBOARD: ${{ needs.dashboard.result }}
+          POLICY: ${{ needs.policy.result }}
+        run: |
+          for result in "$BACKEND" "$AGENTS" "$DASHBOARD" "$POLICY"; do
+            test "$result" = success || exit 1
+          done
