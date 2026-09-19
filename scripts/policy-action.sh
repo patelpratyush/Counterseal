@@ -25,14 +25,14 @@ decision="$(jq -r .decision "$report")"
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then printf 'decision=%s\nreport=%s\n' "$decision" "$report" >> "$GITHUB_OUTPUT"; fi
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
   {
-    printf '## HandoffGuard: %s\n\n' "$decision"
+    printf '## Counterseal: %s\n\n' "$decision"
     printf 'Checks delegated policy content; signatures are checked only when both public keys are supplied.\n\n<pre>'
     jq . "$report" | jq -Rrs '@html'
     printf '</pre>\n'
   } >> "$GITHUB_STEP_SUMMARY"
 fi
-printf 'HandoffGuard decision: %s\n' "$decision"
+printf 'Counterseal decision: %s\n' "$decision"
 if [[ "$decision" != ALLOW ]]; then
-  echo '::error title=HandoffGuard policy check::Delegation denied or check failed. See the job summary.'
+  echo '::error title=Counterseal policy check::Delegation denied or check failed. See the job summary.'
   exit 1
 fi

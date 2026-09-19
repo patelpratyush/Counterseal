@@ -1,4 +1,4 @@
-// Package server provides the trusted, single-tenant HandoffGuard control API.
+// Package server provides the trusted, single-tenant Counterseal control API.
 package server
 
 import (

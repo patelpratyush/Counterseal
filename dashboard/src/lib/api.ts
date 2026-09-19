@@ -31,7 +31,7 @@ export async function control<T>(
       signal: AbortSignal.timeout(15000),
     });
   } catch {
-    throw new Error("Cannot reach the HandoffGuard control API.");
+    throw new Error("Cannot reach the Counterseal control API.");
   }
   if (response.status === 404) notFound();
   if (!response.ok)

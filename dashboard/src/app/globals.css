@@ -128,7 +128,7 @@
     @apply font-sans;
   }
 }
-/* HandoffGuard workspace: neutral surfaces, readable records, explicit decisions. */
+/* Counterseal workspace: neutral surfaces, readable records, explicit decisions. */
 :root {
   --background: #f5f6f7;
   --foreground: #202526;

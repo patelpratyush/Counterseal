@@ -1,7 +1,7 @@
 # Java / Spring Boot workflow
 
 A Java 21 application orchestrates Support → Billing → Notification through the
-Go HandoffGuard API and the official Java MCP SDK. Spring Boot supplies application
+Go Counterseal API and the official Java MCP SDK. Spring Boot supplies application
 configuration, dependency injection, executable JAR packaging, and shutdown lifecycle.
 Each stage has its own gateway process, signed envelope, and one exposed MCP tool.
 

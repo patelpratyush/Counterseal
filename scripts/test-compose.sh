@@ -35,7 +35,7 @@ HG_COMPOSE_URL="http://localhost:$port"
 if "${compose[@]}" run --rm demo --amount=825 > "$work/denied.log" 2>&1; then
   echo 'Unapproved refund unexpectedly succeeded' >&2; exit 1
 fi
-grep -q 'HandoffGuard denied the tool call' "$work/denied.log"
+grep -q 'Counterseal denied the tool call' "$work/denied.log"
 "${compose[@]}" run --rm demo --amount=825 --approve-demo-refund > "$work/approved.json"
 jq -e '.audit.status=="VALID" and .receipts.BILLING.amount==825' "$work/approved.json" >/dev/null
 # Recreate containers, preserving both database and signing-key volumes.

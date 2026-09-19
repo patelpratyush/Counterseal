@@ -3,8 +3,8 @@
 Signed authority delegation for multi-agent systems. Each handoff can narrow an
 agent's permissions; attempts to expand them are rejected and recorded.
 
-The CLI command is `handoffguard`. See `prd.md`
-for the full product spec. Implemented slices include the Obligation Envelope
+The CLI command is `handoffguard` (see [compatibility identifiers](#compatibility-identifiers)).
+See `prd.md` for the full product spec. Implemented slices include the Obligation Envelope
 core, the monotonic-delegation policy engine with CEL approval conditions,
 a PostgreSQL-backed control API with scoped approvals and audit records,
 an MCP tool gateway, a Java/Spring Boot workflow integration, and a Next.js dashboard.
@@ -198,3 +198,11 @@ PostgreSQL, MCP gateway, offline agent workflow, and dashboard browser tests.
 The policy Action rejects authority expansion and weakened approvals, with JSON
 reports and job summaries. Configure the aggregate **CI gate** as a required
 GitHub status check to enforce it before merging.
+
+## Compatibility identifiers
+
+Counterseal retains the `handoffguard` executable, `HANDOFFGUARD_*` environment
+variables, `HG_*` launcher settings, and existing Docker volume names. These are
+stable technical identifiers so existing commands, credentials, and saved data
+continue to work. The Go module and Java package namespace also retain their
+original identifiers; user-facing product names use Counterseal.

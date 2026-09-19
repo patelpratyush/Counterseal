@@ -833,7 +833,7 @@ import "github.com/spf13/cobra"
 
 var rootCmd = &cobra.Command{
 	Use:   "handoffguard",
-	Short: "HandoffGuard: an authorization inheritance layer for multi-agent AI systems",
+	Short: "Counterseal: an authorization inheritance layer for multi-agent AI systems",
 }
 ```
 
@@ -1402,7 +1402,7 @@ Expected: `envelope verify` prints `STATUS: VALID` and exits 0 (`echo $?` prints
 Create `README.md`:
 
 ```markdown
-# HandoffGuard
+# Counterseal
 
 Authorization inheritance layer for multi-agent AI systems. See `prd.md`
 for the full product spec. This is sub-project 1 of the MVP: the

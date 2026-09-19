@@ -22,10 +22,10 @@ export default async function Layout({
           <span className="brand-icon">
             <ShieldCheck size={21} />
           </span>
-          HandoffGuard
+          Counterseal
         </Link>
         <div className="workspace">
-          <span className="workspace-avatar">HG</span>
+          <span className="workspace-avatar">CS</span>
           <div>
             Local workspace<small>Authorization console</small>
           </div>
@@ -91,7 +91,7 @@ export default async function Layout({
         <main id="main">{children}</main>
         <footer className="console-footer">
           <span>
-            HandoffGuard <span className="slash">/</span> Authorization console
+            Counterseal <span className="slash">/</span> Authorization console
           </span>
           <span>Decision records · UTC</span>
         </footer>

@@ -13,7 +13,7 @@ const mono = localFont({
   display: "swap",
 });
 export const metadata: Metadata = {
-  title: "HandoffGuard — Authority console",
+  title: "Counterseal — Authority console",
   description:
     "Inspect signed agent handoffs, inherited permissions, and authorization decisions.",
   robots: { index: false, follow: false },

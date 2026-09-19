@@ -58,7 +58,7 @@ func newAuditCmd() *cobra.Command {
 		}
 		return nil
 	}}
-	verify.Flags().StringVar(&baseURL, "url", "http://127.0.0.1:8080", "HandoffGuard server URL")
+	verify.Flags().StringVar(&baseURL, "url", "http://127.0.0.1:8080", "Counterseal server URL")
 	command.AddCommand(verify)
 	return command
 }

@@ -1,4 +1,4 @@
-# HandoffGuard dashboard
+# Counterseal dashboard
 
 Next.js App Router, TypeScript, shadcn/ui (Base UI), and React Flow. The overview
 and run pages render on the server; the graph and inspector load on the client.

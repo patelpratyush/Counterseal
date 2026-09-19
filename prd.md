@@ -1,4 +1,4 @@
-# HandoffGuard
+# Counterseal
 
 ## Product Requirements Document
 
@@ -13,7 +13,7 @@
 
 # 1. Product Summary
 
-HandoffGuard is a security and policy enforcement layer for multi-agent AI systems.
+Counterseal is a security and policy enforcement layer for multi-agent AI systems.
 
 Its purpose is to guarantee that when one AI agent delegates a task to another agent, the security constraints attached to the original task cannot silently disappear or become weaker.
 
@@ -34,13 +34,13 @@ A customer-support agent receives permission to process a refund with these rest
 
 The support agent delegates the refund to a billing agent.
 
-Without HandoffGuard, the billing agent might receive:
+Without Counterseal, the billing agent might receive:
 
 > "Please refund order 48319."
 
 The original restrictions may disappear.
 
-With HandoffGuard, the delegation carries a signed machine-readable policy envelope containing the restrictions.
+With Counterseal, the delegation carries a signed machine-readable policy envelope containing the restrictions.
 
 The billing agent cannot drop them.
 
@@ -99,13 +99,13 @@ The workflow therefore has authorization at individual points but no guaranteed 
 
 This is similar to privilege propagation in distributed systems.
 
-HandoffGuard turns constraints into structured state that travels with the workflow.
+Counterseal turns constraints into structured state that travels with the workflow.
 
 ---
 
 # 3. Product Vision
 
-HandoffGuard should become:
+Counterseal should become:
 
 > "The authorization inheritance layer for autonomous software agents."
 
@@ -118,7 +118,7 @@ OPA       → policy decisions
 
 OpenTelemetry → distributed tracing
 
-HandoffGuard → delegated authority and obligation propagation
+Counterseal → delegated authority and obligation propagation
 ```
 
 It does not replace agent frameworks.
@@ -381,7 +381,7 @@ Example:
 
 # 8. Delegation Rules
 
-HandoffGuard implements monotonic delegation.
+Counterseal implements monotonic delegation.
 
 A child can narrow a policy.
 
@@ -534,7 +534,7 @@ delegate(
 )
 ```
 
-HandoffGuard receives:
+Counterseal receives:
 
 ```text
 parent envelope
@@ -600,7 +600,7 @@ Before an agent performs a consequential tool action:
 ```text
 Billing Agent
       ↓
-HandoffGuard Gateway
+Counterseal Gateway
       ↓
 Policy Engine
       ↓
@@ -962,7 +962,7 @@ Example:
 Pull request:
 
 ```text
-HandoffGuard Security Check ❌
+Counterseal Security Check ❌
 
 Authority expanded.
 
@@ -995,7 +995,7 @@ This feature is especially valuable for the portfolio because recruiters immedia
                           │ handoff
                           ▼
               ┌────────────────────────┐
-              │ HandoffGuard Gateway   │
+              │ Counterseal Gateway   │
               └───────────┬────────────┘
                           │
              ┌────────────┴─────────────┐
@@ -1103,7 +1103,7 @@ refund.amount > 500
 
 Instead of creating a custom arbitrary scripting language.
 
-HandoffGuard itself handles authority monotonicity.
+Counterseal itself handles authority monotonicity.
 
 CEL handles conditions.
 
@@ -1506,7 +1506,7 @@ Response:
 ```go
 if result.Decision == handoffguard.Deny {
     return fmt.Errorf(
-        "HandoffGuard denied operation: %s",
+        "Counterseal denied operation: %s",
         result.Reason,
     )
 }
@@ -1535,7 +1535,7 @@ Example:
 ```text
 Python Agent
      ↓ HTTP/gRPC
-Go HandoffGuard
+Go Counterseal
      ↓
 MCP Tool
 ```
@@ -1546,14 +1546,14 @@ That actually strengthens the project because it demonstrates cross-language sys
 
 # 22. MCP Gateway
 
-HandoffGuard should operate as a proxy:
+Counterseal should operate as a proxy:
 
 ```text
 Agent
 
  ↓
 
-HandoffGuard MCP Gateway
+Counterseal MCP Gateway
 
  ↓
 
@@ -1566,7 +1566,7 @@ Agent believes it is calling:
 refund.create
 ```
 
-HandoffGuard intercepts it.
+Counterseal intercepts it.
 
 ```text
 1. Identify agent
@@ -1825,7 +1825,7 @@ excluding external tool execution.
 
 Gateway should fail closed for protected operations.
 
-If HandoffGuard cannot determine authorization:
+If Counterseal cannot determine authorization:
 
 ```text
 DENY
@@ -2123,7 +2123,7 @@ Do not build these before the core invariant works.
 
 # 37. Launch Strategy
 
-Launch HandoffGuard as open source.
+Launch Counterseal as open source.
 
 Primary audience:
 
@@ -2166,7 +2166,7 @@ Explain the security problem rather than promoting the project.
 Launch as:
 
 ```text
-Show HN: HandoffGuard – prevent AI agents from delegating away security constraints
+Show HN: Counterseal – prevent AI agents from delegating away security constraints
 ```
 
 ---
@@ -2211,7 +2211,7 @@ Ask:
 
 Do NOT ask:
 
-> "Would you use HandoffGuard?"
+> "Would you use Counterseal?"
 
 The first question discovers whether the pain exists.
 
@@ -2247,7 +2247,7 @@ That is nearly impossible to prove.
 
 Say:
 
-> HandoffGuard focuses specifically on deterministic constraint inheritance and authority narrowing across heterogeneous agent-to-agent delegation.
+> Counterseal focuses specifically on deterministic constraint inheritance and authority narrowing across heterogeneous agent-to-agent delegation.
 
 Adjacent markets already contain:
 
@@ -2260,7 +2260,7 @@ AI governance
 tool authorization
 ```
 
-HandoffGuard should deliberately avoid becoming another generic product in those categories.
+Counterseal should deliberately avoid becoming another generic product in those categories.
 
 Its wedge is:
 
@@ -2307,11 +2307,11 @@ That distinction makes the project considerably stronger.
 
 When a recruiter asks:
 
-> "Tell me about HandoffGuard."
+> "Tell me about Counterseal."
 
 Answer:
 
-> HandoffGuard is an authorization inheritance layer I built for multi-agent AI systems. I noticed that agent frameworks provide tool permissions and guardrails, but when one agent delegates work to another, there's no universal guarantee that the original security constraints survive. I designed signed obligation envelopes and a deterministic policy engine that allows agents to narrow delegated authority but prevents them from expanding permissions or removing mandatory approvals.
+> Counterseal is an authorization inheritance layer I built for multi-agent AI systems. I noticed that agent frameworks provide tool permissions and guardrails, but when one agent delegates work to another, there's no universal guarantee that the original security constraints survive. I designed signed obligation envelopes and a deterministic policy engine that allows agents to narrow delegated authority but prevents them from expanding permissions or removing mandatory approvals.
 
 Then explain:
 
@@ -2455,11 +2455,11 @@ The demo must show:
 
 4. Agent B attempts to remove a mandatory requirement.
 
-5. HandoffGuard blocks the delegation.
+5. Counterseal blocks the delegation.
 
 6. Agent B attempts an unauthorized tool call.
 
-7. HandoffGuard blocks the action.
+7. Counterseal blocks the action.
 
 8. Manager approval is created.
 
@@ -2478,7 +2478,7 @@ Once completed, the project should be presented as infrastructure/security engin
 
 Example:
 
-**HandoffGuard | Go, PostgreSQL, MCP, OpenTelemetry, CEL, Docker**
+**Counterseal | Go, PostgreSQL, MCP, OpenTelemetry, CEL, Docker**
 
 * Built an open-source authorization layer for multi-agent AI systems that cryptographically propagates security constraints across agent-to-agent delegation using signed Ed25519 obligation envelopes.
 * Designed a deterministic policy engine preventing privilege expansion, resource-scope widening, dropped approvals, and delegation-depth violations across autonomous workflows.

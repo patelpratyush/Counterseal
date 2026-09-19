@@ -1,4 +1,4 @@
-name: HandoffGuard policy check
+name: Counterseal policy check
 description: Reject delegated authority expansion between parent and child envelopes.
 branding:
   icon: shield

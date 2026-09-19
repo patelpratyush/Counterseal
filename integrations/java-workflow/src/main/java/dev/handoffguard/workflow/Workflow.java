@@ -128,7 +128,7 @@ public class Workflow implements AutoCloseable {
         if (!attempted.add(stage)) throw new IllegalStateException("This workflow stage has already been attempted");
         try {
             var result = gateways.get(stage).call(stage.tool, arguments);
-            if (Boolean.TRUE.equals(result.isError())) throw new IllegalStateException("HandoffGuard denied the tool call or upstream execution failed");
+            if (Boolean.TRUE.equals(result.isError())) throw new IllegalStateException("Counterseal denied the tool call or upstream execution failed");
             JsonNode receipt = JSON.valueToTree(result.structuredContent());
             validateReceipt(stage, receipt, arguments);
             receipts.put(stage, receipt);

@@ -51,7 +51,7 @@ func newServerCmd() *cobra.Command {
 		}
 		done := make(chan error, 1)
 		go func() { done <- httpServer.Serve(listener) }()
-		fmt.Fprintf(cmd.OutOrStdout(), "HandoffGuard listening on %s\n", listener.Addr().String())
+		fmt.Fprintf(cmd.OutOrStdout(), "Counterseal listening on %s\n", listener.Addr().String())
 		select {
 		case err = <-done:
 			if errors.Is(err, http.ErrServerClosed) {

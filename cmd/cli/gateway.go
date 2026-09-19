@@ -66,7 +66,7 @@ func newGatewayCmd() *cobra.Command {
 	command.Flags().StringVar(&configPath, "config", "", "trusted JSON tool mapping file (required)")
 	command.Flags().StringVar(&agent, "agent", "", "fixed agent identity (required)")
 	command.Flags().StringVar(&envelopeID, "envelope", "", "fixed envelope ID (required)")
-	command.Flags().StringVar(&apiURL, "api-url", "http://127.0.0.1:8080", "HandoffGuard control API URL")
+	command.Flags().StringVar(&apiURL, "api-url", "http://127.0.0.1:8080", "Counterseal control API URL")
 	command.Flags().StringVar(&upstreamURL, "upstream-url", "", "upstream Streamable HTTP MCP URL instead of a subprocess")
 	command.Flags().StringArrayVar(&extraEnv, "upstream-env", nil, "additional environment variable NAME to pass upstream (repeatable)")
 	command.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "total authorization and tool-call timeout")

@@ -29,7 +29,7 @@ stop_tree() {
 api_url_from_log() {
   local pid="$1" log="$2" url attempt
   for attempt in {1..200}; do
-    url="$(sed -n 's/^HandoffGuard listening on /http:\/\//p' "$log" | head -1)"
+    url="$(sed -n 's/^Counterseal listening on /http:\/\//p' "$log" | head -1)"
     if [[ -n "$url" ]]; then printf '%s' "$url"; return; fi
     kill -0 "$pid" 2>/dev/null || { echo "API exited. See $log" >&2; return 1; }
     sleep .1

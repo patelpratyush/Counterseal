@@ -9,7 +9,7 @@ Implemented transports:
 
 - Agent → gateway: stdio, one fixed agent and envelope per gateway process.
 - Gateway → upstream: stdio subprocess or Streamable HTTP.
-- Gateway → HandoffGuard: authenticated HTTP API from the [server slice](server.md).
+- Gateway → Counterseal: authenticated HTTP API from the [server slice](server.md).
 
 This is a tool gateway. Upstream prompts, resources, sampling, elicitation,
 interactive continuations, and tasks are not proxied. Downstream protocol

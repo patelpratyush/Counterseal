@@ -1,4 +1,4 @@
-name: HandoffGuard CI
+name: Counterseal CI
 
 on:
   pull_request:

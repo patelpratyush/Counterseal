@@ -1,5 +1,5 @@
 // Package gateway exposes explicitly mapped upstream MCP tools only after a
-// committed authorization decision from the HandoffGuard control API.
+// committed authorization decision from the Counterseal control API.
 package gateway
 
 import (

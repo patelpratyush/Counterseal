@@ -56,7 +56,7 @@ failures can occur before these outputs exist. Reports are not uploaded unless
 another step uploads them.
 
 For enforcement against untrusted pull requests, use a reviewed, immutable
-HandoffGuard commit via `uses: OWNER/REPOSITORY@FULL_COMMIT_SHA` after publishing
+Counterseal commit via `uses: OWNER/REPOSITORY@FULL_COMMIT_SHA` after publishing
 this repository (replace both placeholders). Obtain the parent envelope and public
 keys from a trusted base revision or protected policy source; the proposed child
 can come from the pull request. A PR must not be able to expand its own parent

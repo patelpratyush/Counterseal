@@ -59,7 +59,7 @@ public final class ControlApi implements AutoCloseable {
 
     public static final class Rejected extends RuntimeException {
         private final int status;
-        Rejected(int status) { super("HandoffGuard request denied or failed: HTTP " + status); this.status = status; }
+        Rejected(int status) { super("Counterseal request denied or failed: HTTP " + status); this.status = status; }
         public int status() { return status; }
     }
 }

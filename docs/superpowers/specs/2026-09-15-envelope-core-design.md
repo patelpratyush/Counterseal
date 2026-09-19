@@ -1,10 +1,10 @@
 # Envelope Core — Design Spec
 
-**Sub-project 1 of 6** in the HandoffGuard MVP (see `prd.md` §35 six-week plan). Status: approved for implementation.
+**Sub-project 1 of 6** in the Counterseal MVP (see `prd.md` §35 six-week plan). Status: approved for implementation.
 
 ## Purpose
 
-Provide the foundational data structure and cryptographic primitives for HandoffGuard's Obligation Envelope: a signed, tamper-evident record of delegated authority. All later sub-projects (policy engine, server, MCP gateway) build on this package.
+Provide the foundational data structure and cryptographic primitives for Counterseal's Obligation Envelope: a signed, tamper-evident record of delegated authority. All later sub-projects (policy engine, server, MCP gateway) build on this package.
 
 ## Scope
 

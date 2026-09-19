@@ -4,7 +4,7 @@ export default function Login() {
   return (
     <main className="login-page">
       <div className="login-brand">
-        <ShieldCheck size={24} /> HandoffGuard
+        <ShieldCheck size={24} /> Counterseal
       </div>
       <section className="login-card">
         <span className="eyebrow">HANDOFFGUARD CONSOLE</span>

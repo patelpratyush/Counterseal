@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>4.1.1</version><relativePath/></parent>
   <groupId>dev.handoffguard</groupId><artifactId>java-workflow</artifactId><version>0.1.0</version>
-  <name>HandoffGuard Java workflow</name>
+  <name>Counterseal Java workflow</name>
   <description>Policy-enforced commerce handoffs using Spring Boot and the Java MCP SDK</description>
   <properties><java.version>21</java.version><mcp.version>2.0.1</mcp.version></properties>
   <dependencies>
