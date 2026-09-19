@@ -1,0 +1,11 @@
+goos: darwin
+goarch: amd64
+pkg: handoffguard/internal/policy
+cpu: Intel(R) Core(TM) i7-8557U CPU @ 1.70GHz
+BenchmarkDiff-8   	    6550	    166453 ns/op	   48359 B/op	     963 allocs/op
+BenchmarkDiff-8   	    8013	    152045 ns/op	   48358 B/op	     963 allocs/op
+BenchmarkDiff-8   	    7470	    149732 ns/op	   48357 B/op	     963 allocs/op
+BenchmarkDiff-8   	    7887	    149438 ns/op	   48356 B/op	     963 allocs/op
+BenchmarkDiff-8   	    7845	    147501 ns/op	   48354 B/op	     963 allocs/op
+PASS
+ok  	handoffguard/internal/policy	8.437s
