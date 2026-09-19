@@ -51,6 +51,9 @@ jobs:
             printf 'Go formatting required:\n%s\n' "$files"
             exit 1
           fi
+      - name: Shell syntax checks
+        run: |
+          for script in start.sh scripts/*.sh; do bash -n "$script"; done
       - run: go vet ./...
       - name: Unit, PostgreSQL, gateway, and race tests
         run: go test -race -count=1 -coverprofile=coverage.out ./...
@@ -83,18 +86,24 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
-          python-version: '3.12'
-      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: integrations/java-workflow/pom.xml
+      - name: Java unit tests, real MCP handoffs, approvals, denials, and cleanup
+        run: bash scripts/smoke-agents.sh
+      - name: Save JUnit reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          version: '0.12.15'
-      - name: Install locked agent dependencies
-        run: uv sync --directory integrations/openai-agents --python 3.12 --frozen
-      - name: Guarded versus unguarded MCP demo
-        run: python3 scripts/smoke-gateway.py
-      - name: Real SDK handoffs, approvals, denials, and cleanup
-        run: python3 scripts/smoke-agents.py
+          name: java-test-reports
+          path: |
+            integrations/java-workflow/target/surefire-reports/
+            integrations/java-workflow/target/failsafe-reports/
+          if-no-files-found: ignore
+          retention-days: 7
 
   dashboard:
     name: Dashboard build and browser tests
@@ -123,18 +132,14 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12'
       - run: npm ci --prefix dashboard
       - run: npm run lint --prefix dashboard
       - run: npm run build --prefix dashboard
-      - name: Install pinned browser test dependencies
-        run: |
-          python3 -m pip install -r dashboard/tests/requirements.txt
-          python3 -m playwright install --with-deps chromium
+      - name: Install Chromium
+        working-directory: dashboard
+        run: npx playwright install --with-deps chromium
       - name: Browser checks against real API and database
-        run: python3 scripts/smoke-dashboard.py
+        run: bash scripts/smoke-dashboard.sh
       - name: Save browser screenshots
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -152,9 +157,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12'
       - name: Narrowed delegation must pass
         id: allow
         uses: ./
@@ -178,7 +180,7 @@ jobs:
           test "$DENY_DECISION" = DENY
           test "$DENY_OUTCOME" = failure
       - name: Adapter failure and input handling tests
-        run: python3 scripts/test-policy-action.py
+        run: bash scripts/test-policy-action.sh
 
   gate:
     name: CI gate

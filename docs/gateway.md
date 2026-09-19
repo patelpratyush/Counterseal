@@ -161,7 +161,9 @@ With a running control API and its token in the environment:
 
 ```bash
 go build -o handoffguard ./cmd/cli
-python3 scripts/demo-gateway.py
+export HANDOFFGUARD_BINARY="$PWD/handoffguard"
+export HANDOFFGUARD_SERVER_URL=http://127.0.0.1:8080
+bash scripts/demo-gateway.sh
 ```
 
 The demo issues a temporary-lived envelope and shows:
@@ -176,16 +178,17 @@ The demo issues a temporary-lived envelope and shows:
 To build and run the entire demo against a disposable local Postgres cluster:
 
 ```bash
-python3 scripts/test-postgres.py python3 scripts/smoke-gateway.py
+bash scripts/test-postgres.sh bash scripts/smoke-gateway.sh
 ```
 
 The smoke helper builds into a temporary directory, starts a temporary API
 server, runs real stdio gateway/upstream subprocesses, and cleans them up. The
-Postgres helper requires `initdb` and `pg_ctl` on PATH.
+Postgres helper requires `initdb` and `pg_ctl` on PATH. The demo uses Java 21+
+and Maven; see the [Java integration guide](../integrations/java-workflow/README.md).
 
 ```bash
 go test -race ./...
-python3 scripts/test-postgres.py go test -race ./...
+bash scripts/test-postgres.sh go test -race ./...
 go vet ./...
 ```
 

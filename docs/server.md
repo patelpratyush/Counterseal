@@ -28,7 +28,7 @@ existing envelopes unverifiable. SIGINT/SIGTERM triggers graceful shutdown.
 In a shell with the same token:
 
 ```bash
-python3 scripts/demo-server.py
+bash scripts/demo-server.sh
 # DENY: manager approval required
 # ALLOW: matching approval consumed
 # DENY: approval replay rejected
@@ -194,7 +194,7 @@ go test ./...
 
 # Creates an isolated temporary cluster, runs race-enabled tests, stops it,
 # and removes only the cluster it created. Requires initdb and pg_ctl on PATH.
-python3 scripts/test-postgres.py
+bash scripts/test-postgres.sh
 
 # Or use a dedicated existing test database. Each test creates and drops
 # its own randomly named schema; the DB role must be allowed to create schemas.

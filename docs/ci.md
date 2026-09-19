@@ -6,7 +6,7 @@
 | Job | Checks |
 | --- | --- |
 | Backend | Go formatting, vet, race tests with PostgreSQL, bounded policy fuzzing, CLI build |
-| Agent and gateway integration | Guarded/unguarded MCP demo and offline Agents SDK workflow tests |
+| Agent and gateway integration | Guarded/unguarded MCP demo and Java/Spring Boot workflow and JUnit tests |
 | Dashboard | Locked npm install, ESLint, production build, real-API Chromium browser checks |
 | Policy Action gate | Allowed and denied delegation fixtures, adapter failures, signing and tampering |
 
@@ -41,7 +41,7 @@ For a local demonstration in this repository, after checkout:
     child: examples/policy-child-allow.json
 ```
 
-The Action requires Bash and Python 3 (available on GitHub's Ubuntu runners),
+The Action requires Bash and jq (available on GitHub's Ubuntu runners),
 installs Go from its own `go.mod`, and accepts JSON or YAML paths relative to
 `GITHUB_WORKSPACE`. Optional `parent-key` and `child-key` inputs must be supplied
 together to verify signatures. Without keys, the check evaluates policy content
@@ -68,23 +68,21 @@ intentionally denied fixture and then asserts that it failed with `DENY`.
 
 ## Local equivalents
 
-With Go, PostgreSQL tools, Python 3, uv, and Node/npm installed:
+With Go, PostgreSQL tools, Java 21+, Maven, Bash, jq, and Node/npm installed:
 
 ```bash
 go vet ./...
-python3 scripts/test-postgres.py go test -race -count=1 ./...
-python3 scripts/test-policy-action.py
-uv sync --directory integrations/openai-agents --python 3.12 --frozen
-python3 scripts/test-postgres.py python3 scripts/smoke-gateway.py
-python3 scripts/test-postgres.py python3 scripts/smoke-agents.py
+bash scripts/test-postgres.sh go test -race -count=1 ./...
+bash scripts/test-policy-action.sh
+mvn -B -f integrations/java-workflow/pom.xml verify
+bash scripts/test-postgres.sh bash scripts/smoke-gateway.sh
+bash scripts/test-postgres.sh bash scripts/smoke-agents.sh
 npm ci --prefix dashboard
 npm run lint --prefix dashboard
 npm run build --prefix dashboard
-python3 -m pip install -r dashboard/tests/requirements.txt
-python3 -m playwright install chromium
-python3 scripts/test-postgres.py python3 scripts/smoke-dashboard.py
+(cd dashboard && npx playwright install chromium)
+bash scripts/test-postgres.sh bash scripts/smoke-dashboard.sh
 ```
 
-Use a Python virtual environment if your system Python prevents package installs.
 The PostgreSQL helper creates and removes an isolated database and Unix socket;
 it does not use your preview database. CI uses its service database directly.

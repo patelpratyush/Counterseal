@@ -20,7 +20,7 @@ Implemented on `feat/dashboard`, based on agent integration commit `579b384`.
 - ESLint, Go tests, and Go vet passed.
 - PostgreSQL overview integration tests passed: empty state, counts, pagination,
   search, blocked filter, invalid input, and missing bearer token.
-- Python Playwright checks against the real Go API passed: authentication, search,
+- Playwright checks against the real Go API passed: authentication, search,
   four-node graph with a denied proposal, constraint inspection, audit validation,
   decision history, theme switch, mobile overflow, and logout. No browser errors.
 - Desktop and mobile screenshots were inspected. Test services shut down cleanly.
@@ -48,3 +48,9 @@ Production build, TypeScript, ESLint, and the real-API browser suite passed afte
 these changes. Browser checks also cover blocked-run navigation and verify that all
 graph nodes fit horizontally at mobile width. Refreshed desktop/mobile screenshots
 are at the paths above.
+
+## Java migration
+
+Browser checks now use TypeScript Playwright and the npm lockfile. Local preview
+startup uses Bash and seeds the Java/Spring Boot workflow. Python and uv are no
+longer required. See [the Java integration](../integrations/java-workflow/README.md).

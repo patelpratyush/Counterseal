@@ -50,4 +50,4 @@ runs:
         HG_CHILD: ${{ inputs.child }}
         HG_PARENT_KEY: ${{ inputs.parent-key }}
         HG_CHILD_KEY: ${{ inputs.child-key }}
-      run: python3 "$HG_ACTION_PATH/scripts/policy-action.py"
+      run: bash "$HG_ACTION_PATH/scripts/policy-action.sh"

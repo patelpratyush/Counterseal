@@ -21,11 +21,13 @@ The first start installs dependencies; subsequent starts reuse them unless the
 npm lockfile changes. The preview has its own credentials and overrides inherited
 API settings only for its child processes; it does not rewrite `.env.local`.
 
-Prerequisites: Python 3, Go, Node/npm, PostgreSQL tools, and uv. On macOS they can
+Prerequisites: Java 21+, Maven, Go, Node/npm, PostgreSQL tools, Bash, jq, curl, and OpenSSL. On macOS they can
 be installed with Homebrew. The launcher discovers standard PostgreSQL 18
 Homebrew paths. It uses port 3000 when available and otherwise prints a free port.
 
 Options: `--no-open`, `--no-seed`, `--port 3001`, or `--check` (start, verify, stop).
+`HANDOFFGUARD_PREVIEW_DIR` can override the saved-state directory. The dashboard
+development build still supports only one preview at a time per checkout.
 Logs are in `.local-preview/`. Run only one preview at a time. This launcher is for
 local development, not production deployment. It uses the existing single-viewer
 session model described below.
@@ -92,11 +94,14 @@ Next.js Server Actions apply origin checks; do not broaden allowed origins casua
 npm run lint
 npm run build
 cd ..
-python3 scripts/test-postgres.py go test ./internal/server -run TestDashboardOverview
-python3 scripts/test-postgres.py python3 scripts/smoke-dashboard.py
+bash scripts/test-postgres.sh go test ./internal/server -run TestDashboardOverview
+bash scripts/test-postgres.sh bash scripts/smoke-dashboard.sh
 ```
 
-Browser tests require Python `playwright` and `python3 -m playwright install chromium`.
+Browser tests use TypeScript Playwright from the npm lockfile. Install Chromium with
+`npx playwright install chromium` from the dashboard directory.
 They seed an isolated Go API, start the production dashboard with temporary viewer
 credentials, check login/search/graph/denials/audit/theme/mobile/logout, and shut down.
 Screenshots are written to `/tmp/handoffguard-{overview,run,mobile}.png`.
+The test server uses port 4173 by default; set `HG_E2E_PORT` to choose another port.
+It never reuses an existing server.

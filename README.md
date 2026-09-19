@@ -4,7 +4,7 @@ Authorization inheritance layer for multi-agent AI systems. See `prd.md`
 for the full product spec. Implemented slices include the Obligation Envelope
 core, the monotonic-delegation policy engine with CEL approval conditions,
 a PostgreSQL-backed control API with scoped approvals and audit records,
-an MCP tool gateway, an OpenAI Agents SDK integration, and a Next.js dashboard.
+an MCP tool gateway, a Java/Spring Boot workflow integration, and a Next.js dashboard.
 
 ## Build
 
@@ -28,8 +28,9 @@ go test ./...
 
 ## Status
 
-Envelope core, policy engine, server/PostgreSQL, MCP gateway, and agent-framework
-integration and dashboard slices are implemented. CI integration and deployment polish remain. See
+Envelope core, policy engine, server/PostgreSQL, MCP gateway, Java/Spring Boot
+orchestration, dashboard, and CI workflow are implemented. Hosted CI activation,
+Docker Compose, and deployment polish remain. See
 [policy engine design](docs/design/policy-engine.md) and the
 [server guide](docs/server.md) for rules, setup, and limitations.
 
@@ -97,12 +98,12 @@ export HANDOFFGUARD_API_TOKEN="$(openssl rand -hex 32)"
 ./handoffguard server --key "$HOME/.handoffguard/server.priv"
 ```
 
-Run `python3 scripts/demo-server.py` in a shell with the same token to exercise
+Run `bash scripts/demo-server.sh` in a shell with the same token to exercise
 DENY → approval → ALLOW → replay DENY and verify the audit chain. This API is for
 trusted control-plane callers; agent and approver identity are supplied by that
 caller until identity integration is added.
 
-Run `python3 scripts/test-postgres.py` for the integration suite against a
+Run `bash scripts/test-postgres.sh` for the integration suite against a
 disposable local PostgreSQL cluster (requires `initdb` and `pg_ctl` on PATH).
 
 ## MCP gateway
@@ -122,25 +123,25 @@ identity or envelope; only mapped and authorized tool calls reach upstream.
 Run the guarded-versus-unguarded simulated refund demo against a running API:
 
 ```bash
-python3 scripts/demo-gateway.py
+bash scripts/demo-gateway.sh
 ```
 
 Or run the complete CLI demo with a disposable database and API server:
 
 ```bash
-python3 scripts/test-postgres.py python3 scripts/smoke-gateway.py
+bash scripts/test-postgres.sh bash scripts/smoke-gateway.sh
 ```
 
 ## Agent workflow
 
-The [Agents SDK integration](integrations/openai-agents/README.md) runs
+The [Java/Spring Boot integration](integrations/java-workflow/README.md) runs
 Support → Billing → Notification with signed delegation and a separate MCP
-gateway for each agent. The default model is deterministic and offline; an
-explicit live model option is also available. Refunds and notifications are simulated.
+gateway for each agent. The Java workflow is deterministic and requires no model
+service or API key. Refunds and notifications are simulated.
 
 ```bash
-uv sync --directory integrations/openai-agents --python 3.12 --frozen
-python3 scripts/test-postgres.py python3 scripts/smoke-agents.py
+mvn -B -f integrations/java-workflow/pom.xml verify
+bash scripts/test-postgres.sh bash scripts/smoke-agents.sh
 ```
 
 ## Dashboard
@@ -154,7 +155,7 @@ Start the full local preview with one command:
 It prepares a private PostgreSQL database, starts the Go API, adds a simulated
 agent workflow on the first run, and opens the dashboard. The terminal prints
 your viewer password. Press Ctrl+C to stop; `.local-preview/` preserves your data.
-Requires Go, Node/npm, PostgreSQL tools, Python 3, and uv. Existing API services
+Requires Go, Node/npm, PostgreSQL tools, Java 21+, Maven, Bash, jq, curl, and OpenSSL. Existing API services
 and `dashboard/.env.local` are not modified. Use `./start.sh --help` for options.
 
 
