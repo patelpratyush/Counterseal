@@ -88,7 +88,10 @@ test("real API: authentication, search, delegation, audit, theme, mobile, logout
   await expect(page.getByText("Audit valid", { exact: true })).toBeVisible();
   await page.screenshot({ path: "/tmp/handoffguard-run.png", fullPage: true });
   await page.getByRole("tab", { name: "Decision history" }).click();
-  await expect(page.getByText("Delegation denied", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("tabpanel", { name: /Decision history/ })
+      .getByRole("heading", { name: "Delegation denied", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Toggle color theme" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.getByRole("tab", { name: "Delegation graph" }).click();
