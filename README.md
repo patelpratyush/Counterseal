@@ -45,6 +45,8 @@ orchestration, dashboard, CI workflow, and Docker Compose are implemented.
 Hosted CI activation and production deployment hardening remain. See
 [policy engine design](docs/design/policy-engine.md) and the
 [server guide](docs/server.md) for rules, setup, and limitations.
+The stack is integrated into `master`; see the [release checkpoint](docs/release-checkpoint.md)
+for verified behavior and remaining work.
 
 ## Envelope format and keys
 
