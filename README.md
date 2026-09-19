@@ -3,6 +3,14 @@
 Signed authority delegation for multi-agent systems. Each handoff can narrow an
 agent's permissions; attempts to expand them are rejected and recorded.
 
+[![Counterseal CI](https://github.com/patelpratyush/Counterseal/actions/workflows/ci.yml/badge.svg)](https://github.com/patelpratyush/Counterseal/actions/workflows/ci.yml)
+
+![Counterseal delegation graph and audit verification](docs/assets/delegation.png)
+
+Explore the [architecture and demo](docs/portfolio.md), watch the
+[browser walkthrough](docs/assets/walkthrough.webm), or read the
+[measured policy benchmark](docs/benchmarks.md).
+
 The CLI command is `handoffguard` (see [compatibility identifiers](#compatibility-identifiers)).
 See `prd.md` for the full product spec. Implemented slices include the Obligation Envelope
 core, the monotonic-delegation policy engine with CEL approval conditions,
@@ -45,7 +53,8 @@ go test ./...
 
 Envelope core, policy engine, server/PostgreSQL, MCP gateway, Java/Spring Boot
 orchestration, dashboard, CI workflow, and Docker Compose are implemented.
-Hosted CI activation and production deployment hardening remain. See
+Hosted CI passes and `main` requires the **CI gate** check through a pull request.
+Production deployment hardening remains. See
 [policy engine design](docs/design/policy-engine.md) and the
 [server guide](docs/server.md) for rules, setup, and limitations.
 The stack is integrated into `main`; see the [release checkpoint](docs/release-checkpoint.md)

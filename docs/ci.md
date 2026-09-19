@@ -16,14 +16,14 @@ no OpenAI API key or repository secrets. Browser screenshots are uploaded for
 seven days. External Actions are pinned to commit SHAs; Dependabot checks them
 weekly. The aggregate gate fails if any required job fails or is skipped.
 
-## Enable on GitHub
+## GitHub enforcement
 
-Push this branch to your GitHub repository and open a pull request. After the
-first successful workflow run, make **CI gate** a required status check in the
-branch rules for your default branch. Workflow files alone do not prevent merges.
-The repository is [patelpratyush/Counterseal](https://github.com/patelpratyush/Counterseal).
-Local validation does not replace the first Ubuntu-hosted run or configuration of
-required status checks.
+[Hosted CI passed for `6da1c20`](https://github.com/patelpratyush/Counterseal/actions/runs/35475480843).
+As verified on 2026-09-19, the active `Protect main` ruleset requires a pull request,
+the **CI gate** check from GitHub Actions, and an up-to-date branch. Force pushes
+and branch deletion are blocked. Required approvals are zero for solo development.
+Develop on a separate branch and merge through a passing pull request.
+For forks, configure the same rules separately; workflow files alone do not prevent merges.
 
 ## Reusable policy Action
 

@@ -33,16 +33,23 @@ Validation completed during this feature stack:
 
 ## Remaining work
 
-1. Publish to [patelpratyush/Counterseal](https://github.com/patelpratyush/Counterseal),
-   verify the first hosted CI run, and require **CI gate** in branch rules. Local
-   validation is complete; hosted CI and branch protection require separate verification.
-2. Prepare portfolio screenshots, an architecture diagram, a demo video, and measured
-   benchmarks if desired.
-3. Before a public production deployment: add authenticated operator identity,
-   appropriate access controls, durable workflow recovery, operational monitoring,
-   backups, and external audit checkpoints. The current API has a shared control
-   token and serializes service transactions; the dashboard is a single-viewer
-   console. These boundaries are described in the component guides.
+The repository is published at [patelpratyush/Counterseal](https://github.com/patelpratyush/Counterseal).
+All six jobs passed in [hosted CI for `6da1c20`](https://github.com/patelpratyush/Counterseal/actions/runs/35475480843).
+The active main-branch rules require a pull request, the **CI gate** check, and an
+up-to-date branch; force pushes and deletion are blocked. Required approvals are zero
+for solo development. These settings were verified through the GitHub API on 2026-09-19.
+
+The [portfolio guide](portfolio.md) includes screenshots, an architecture diagram,
+an automated browser recording, a narrated-demo script, and measured benchmarks.
+
+Before a public production deployment: add authenticated operator identity,
+appropriate access controls, durable workflow recovery, operational monitoring,
+backups, and external audit checkpoints. The current API has a shared control
+token and serializes service transactions; the dashboard is a single-viewer
+console. These boundaries are described in the component guides.
+
+Optional feature work includes a live-model Java integration; the shipped workflow
+is deterministic. A polished voiceover video can be recorded using the portfolio script.
 
 Start the local container demo with `./compose.sh up` and `./compose.sh demo`.
 See [Docker setup](docker.md) and [Java integration](../integrations/java-workflow/README.md).
