@@ -8,6 +8,18 @@ an MCP tool gateway, a Java/Spring Boot workflow integration, and a Next.js dash
 
 ## Build
 
+To run the whole stack with Docker:
+
+```bash
+./compose.sh up
+./compose.sh demo
+```
+
+Open http://localhost:3100 using the password printed by the launcher.
+See [Docker setup](docs/docker.md) for persistence, approval demos, and cleanup.
+
+To build the Go CLI locally:
+
 ```bash
 go build -o handoffguard ./cmd/cli
 ```
@@ -29,8 +41,8 @@ go test ./...
 ## Status
 
 Envelope core, policy engine, server/PostgreSQL, MCP gateway, Java/Spring Boot
-orchestration, dashboard, and CI workflow are implemented. Hosted CI activation,
-Docker Compose, and deployment polish remain. See
+orchestration, dashboard, CI workflow, and Docker Compose are implemented.
+Hosted CI activation and production deployment hardening remain. See
 [policy engine design](docs/design/policy-engine.md) and the
 [server guide](docs/server.md) for rules, setup, and limitations.
 

@@ -12,6 +12,7 @@ const url = `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: "./tests",
+  testMatch: "browser.spec.ts",
   timeout: 90_000,
   workers: 1,
   retries: 0,

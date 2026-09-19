@@ -95,3 +95,10 @@ bash scripts/test-postgres.sh bash scripts/smoke-gateway.sh
 > Built a Java 21/Spring Boot workflow orchestrator using MCP, signed authority
 > delegation, approval enforcement, and PostgreSQL audit verification; validated
 > success and denial paths with JUnit integration tests and GitHub Actions CI.
+
+## Docker
+
+Run `./compose.sh up` followed by `./compose.sh demo` from the repository root to
+build and execute this application without installing a JDK or Maven on the host.
+The demo image includes the Go gateway binary and runs as a non-root user. See
+[the Docker guide](../../docs/docker.md) for the full stack and approval examples.

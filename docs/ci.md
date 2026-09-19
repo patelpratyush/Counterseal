@@ -1,7 +1,7 @@
 # CI and delegated policy checks
 
 `.github/workflows/ci.yml` runs for every pull request, pushes to `master` or
-`main`, and manual dispatches. Four jobs feed a single **CI gate** result:
+`main`, and manual dispatches. Five jobs feed a single **CI gate** result:
 
 | Job | Checks |
 | --- | --- |
@@ -9,6 +9,7 @@
 | Agent and gateway integration | Guarded/unguarded MCP demo and Java/Spring Boot workflow and JUnit tests |
 | Dashboard | Locked npm install, ESLint, production build, real-API Chromium browser checks |
 | Policy Action gate | Allowed and denied delegation fixtures, adapter failures, signing and tampering |
+| Docker Compose integration | Container builds, Java approval paths, persisted data/keys, browser login and audit |
 
 Database jobs each use their own disposable PostgreSQL 18 service. Tests require
 no OpenAI API key or repository secrets. Browser screenshots are uploaded for

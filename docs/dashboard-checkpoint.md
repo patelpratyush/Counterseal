@@ -32,7 +32,8 @@ Screenshots from isolated test records are at `/tmp/handoffguard-overview.png`,
 
 See [dashboard setup](../dashboard/README.md). The [CI gate](ci.md) is now implemented
 on `feat/ci-gate`; hosted execution still requires a GitHub remote. Remaining work
-includes Docker Compose/deployment polish and broader benchmarks. Multi-user OIDC and
+includes production deployment hardening and broader benchmarks.
+[Docker Compose](docker.md) provides the local container stack. Multi-user OIDC and
 production identity hardening are not implemented. This feature stack remains
 unmerged into `master`.
 

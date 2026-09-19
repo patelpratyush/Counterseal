@@ -53,7 +53,7 @@ jobs:
           fi
       - name: Shell syntax checks
         run: |
-          for script in start.sh scripts/*.sh; do bash -n "$script"; done
+          for script in start.sh compose.sh scripts/*.sh deploy/*.sh; do bash -n "$script"; done
       - run: go vet ./...
       - name: Unit, PostgreSQL, gateway, and race tests
         run: go test -race -count=1 -coverprofile=coverage.out ./...
@@ -182,10 +182,38 @@ jobs:
       - name: Adapter failure and input handling tests
         run: bash scripts/test-policy-action.sh
 
+  containers:
+    name: Docker Compose integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci --prefix dashboard
+      - name: Install Chromium
+        working-directory: dashboard
+        run: npx playwright install --with-deps chromium
+      - name: Build, run, recreate, and verify the container stack
+        run: bash scripts/test-compose.sh
+      - name: Save container dashboard screenshot
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compose-screenshot
+          path: /tmp/handoffguard-compose.png
+          if-no-files-found: ignore
+          retention-days: 7
+
   gate:
     name: CI gate
     if: always()
-    needs: [backend, agents, dashboard, policy]
+    needs: [backend, agents, dashboard, policy, containers]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
@@ -195,7 +223,8 @@ jobs:
           AGENTS: ${{ needs.agents.result }}
           DASHBOARD: ${{ needs.dashboard.result }}
           POLICY: ${{ needs.policy.result }}
+          CONTAINERS: ${{ needs.containers.result }}
         run: |
-          for result in "$BACKEND" "$AGENTS" "$DASHBOARD" "$POLICY"; do
+          for result in "$BACKEND" "$AGENTS" "$DASHBOARD" "$POLICY" "$CONTAINERS"; do
             test "$result" = success || exit 1
           done

@@ -105,3 +105,10 @@ credentials, check login/search/graph/denials/audit/theme/mobile/logout, and shu
 Screenshots are written to `/tmp/handoffguard-{overview,run,mobile}.png`.
 The test server uses port 4173 by default; set `HG_E2E_PORT` to choose another port.
 It never reuses an existing server.
+
+## Container preview
+
+`./compose.sh up` from the repository root starts the production dashboard at
+http://localhost:3100 with PostgreSQL and the Go API. `./compose.sh demo` adds a
+Java workflow. See [Docker Compose](../docs/docker.md) for credentials, persistent
+volumes, and the container browser test.

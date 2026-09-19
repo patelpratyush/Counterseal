@@ -1,0 +1,17 @@
+.git
+.worktrees
+.local-preview
+**/node_modules
+**/.next
+**/.next-preview
+**/target
+**/.venv
+**/__pycache__
+**/test-results
+**/playwright-report
+**/.env*
+**/*.priv
+**/*.pub
+.env.compose
+handoffguard
+coverage.out

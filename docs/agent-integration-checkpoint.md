@@ -24,7 +24,7 @@ bash scripts/test-postgres.sh bash scripts/smoke-agents.sh
 ```
 
 The feature stack remains unmerged into `master`. Hosted CI still requires a GitHub
-remote and branch rules. Docker Compose remains the next deployment task.
+remote and branch rules. [Docker Compose](docker.md) is implemented on `feat/docker-compose`.
 
 ## Local validation
 

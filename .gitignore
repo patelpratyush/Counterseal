@@ -8,3 +8,5 @@ __pycache__/
 /.local-preview/
 
 /integrations/java-workflow/target/
+
+/.env.compose
