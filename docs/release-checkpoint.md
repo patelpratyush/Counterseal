@@ -1,6 +1,6 @@
 # Integrated project checkpoint — 2026-09-19
 
-The feature stack through `4f2ed23` is integrated into `master`, together with these
+The feature stack through `4f2ed23` is integrated into `main`, together with these
 status notes. The delivered stack consists of:
 
 - Go envelope signing, delegation policy/CEL checks, PostgreSQL API, audit, and MCP gateway.
@@ -33,9 +33,9 @@ Validation completed during this feature stack:
 
 ## Remaining work
 
-1. Configure a GitHub remote, push `master`, run hosted CI, and require **CI gate**
-   in branch rules. This checkout has no remote, so nothing has been pushed and
-   hosted CI/branch protection have not been verified.
+1. Publish to [patelpratyush/Counterseal](https://github.com/patelpratyush/Counterseal),
+   verify the first hosted CI run, and require **CI gate** in branch rules. Local
+   validation is complete; hosted CI and branch protection require separate verification.
 2. Prepare portfolio screenshots, an architecture diagram, a demo video, and measured
    benchmarks if desired.
 3. Before a public production deployment: add authenticated operator identity,

@@ -116,4 +116,4 @@ The GitHub CI container job runs this same script and contributes to **CI gate**
 Local validation passed on Docker Desktop with Linux containers: all image builds,
 Java approval scenarios, identical signing-key hash after recreation, saved-run
 browser inspection, and audit verification. The disposable test containers and
-volumes were removed afterwards. Hosted GitHub execution still requires a remote.
+volumes were removed afterwards. Hosted execution is tracked in GitHub Actions.

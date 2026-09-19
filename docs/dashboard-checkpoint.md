@@ -31,11 +31,11 @@ Screenshots from isolated test records are at `/tmp/handoffguard-overview.png`,
 ## Next
 
 See [dashboard setup](../dashboard/README.md). The [CI gate](ci.md) is now implemented
-on `feat/ci-gate`; hosted execution still requires a GitHub remote. Remaining work
+on `feat/ci-gate`; hosted execution and branch rules require GitHub verification. Remaining work
 includes production deployment hardening and broader benchmarks.
 [Docker Compose](docker.md) provides the local container stack. Multi-user OIDC and
 production identity hardening are not implemented. This feature stack is merged
-into `master`.
+into `main`.
 
 ## UI refinement
 

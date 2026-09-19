@@ -1,6 +1,9 @@
-# HandoffGuard
+# Counterseal
 
-Authorization inheritance layer for multi-agent AI systems. See `prd.md`
+Signed authority delegation for multi-agent systems. Each handoff can narrow an
+agent's permissions; attempts to expand them are rejected and recorded.
+
+The CLI command is `handoffguard`. See `prd.md`
 for the full product spec. Implemented slices include the Obligation Envelope
 core, the monotonic-delegation policy engine with CEL approval conditions,
 a PostgreSQL-backed control API with scoped approvals and audit records,
@@ -45,7 +48,7 @@ orchestration, dashboard, CI workflow, and Docker Compose are implemented.
 Hosted CI activation and production deployment hardening remain. See
 [policy engine design](docs/design/policy-engine.md) and the
 [server guide](docs/server.md) for rules, setup, and limitations.
-The stack is integrated into `master`; see the [release checkpoint](docs/release-checkpoint.md)
+The stack is integrated into `main`; see the [release checkpoint](docs/release-checkpoint.md)
 for verified behavior and remaining work.
 
 ## Envelope format and keys

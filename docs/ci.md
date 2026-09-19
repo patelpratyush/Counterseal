@@ -21,9 +21,9 @@ weekly. The aggregate gate fails if any required job fails or is skipped.
 Push this branch to your GitHub repository and open a pull request. After the
 first successful workflow run, make **CI gate** a required status check in the
 branch rules for your default branch. Workflow files alone do not prevent merges.
-This checkout currently has no Git remote; hosted execution and branch rules have
-not been verified or configured. Local validation does not replace that first
-Ubuntu-hosted run.
+The repository is [patelpratyush/Counterseal](https://github.com/patelpratyush/Counterseal).
+Local validation does not replace the first Ubuntu-hosted run or configuration of
+required status checks.
 
 ## Reusable policy Action
 

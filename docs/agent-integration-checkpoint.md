@@ -23,8 +23,7 @@ identity system, durable workflow recovery, or Docker deployment was added here.
 bash scripts/test-postgres.sh bash scripts/smoke-agents.sh
 ```
 
-The feature stack is merged into `master`. Hosted CI still requires a GitHub
-remote and branch rules. [Docker Compose](docker.md) is implemented on `feat/docker-compose`.
+The feature stack is merged into `main`. Hosted CI and branch rules are tracked in the [release checkpoint](release-checkpoint.md). [Docker Compose](docker.md) is implemented on `feat/docker-compose`.
 
 ## Local validation
 
