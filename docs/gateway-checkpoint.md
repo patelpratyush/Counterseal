@@ -10,5 +10,5 @@ Verified through unit/race tests, real MCP sessions against the PostgreSQL API,
 Streamable HTTP forwarding, and the built CLI stdio demo. See
 [gateway setup and limitations](gateway.md) for the completed implementation.
 
-The feature branch is based on the server and policy feature branches; none of
-these newer slices has been merged into `master` yet.
+The gateway, server, and policy slices are now integrated into `master` with the
+Java workflow, dashboard, CI, and Docker stack. See the [release checkpoint](release-checkpoint.md).
