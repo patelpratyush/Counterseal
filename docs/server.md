@@ -21,37 +21,35 @@ go build -o /tmp/handoffguard ./cmd/cli
 Reuse the key file on subsequent starts; keygen refuses to overwrite it. The
 server binds to `127.0.0.1:8080` by default. `--addr` changes the binding. Database
 credentials and the API token are environment variables rather than CLI flags.
-Startup applies embedded migration version 1 transactionally and pins the public
+Startup applies embedded migrations through version 2 transactionally and pins the public
 signing key in the database. A different key fails startup instead of making
 existing envelopes unverifiable. SIGINT/SIGTERM triggers graceful shutdown.
 
 In a shell with the same token:
 
 ```bash
-bash scripts/demo-server.sh
-# DENY: manager approval required
-# ALLOW: matching approval consumed
-# DENY: approval replay rejected
-# Audit VALID: run_... head: ...
-
 /tmp/handoffguard audit verify run_YOUR_RUN_ID
 ```
 
 `HANDOFFGUARD_SERVER_URL` changes the demo's URL. The audit CLI accepts `--url`.
+For approvals, use the [operator prepare/approve/resume guide](operator-accounts.md).
+Legacy assertion-based demos require the explicit `--allow-demo-approvals` server
+flag and should run only in isolated test environments.
 
 ## Trust model
 
-This is a single-tenant **trusted control-plane API**. Every `/v1` route requires
-`Authorization: Bearer <HANDOFFGUARD_API_TOKEN>`; the token must be at least 32
-bytes. `/healthz` reports database availability without authentication. Possession
-of the control token grants issuance, approval-registration, and revocation
-privileges. Do not give this token directly to an untrusted agent or browser.
+This is a single-tenant API with separate service and operator credentials.
+The service token (`HANDOFFGUARD_API_TOKEN`, at least 32 bytes) grants envelope
+issuance, delegation, evaluation, and revocation, but cannot approve refunds by
+default. Individual operator sessions grant read access; only refund managers can
+approve. `/healthz` and `/v1/operators/login` are public. All other routes require
+a suitable bearer credential. Never give the service token to an untrusted agent.
 
 The server signs envelopes as the authority issuing them on behalf of the named
-agents. Agent names and approver roles are trusted assertions of the calling
-control plane; there is no independent user identity or role provider yet.
-The caller must authenticate the acting agent and human approver before invoking
-these endpoints. Agent inventory is populated from envelope parties.
+agents. Agent identity remains a trusted control-plane assertion. Human approvers
+are authenticated through [local operator accounts](operator-accounts.md); identity
+and role come from the session, not request fields. Agent inventory is populated
+from envelope parties. Service-token holders remain trusted policy issuers.
 
 Action requests use normalized `resources`, `data_classes`, and `arguments`.
 The trusted caller must derive the first two from the actual tool operation.
@@ -61,8 +59,8 @@ second condition context cannot disagree with those arguments. The MCP gateway
 will supply tool-specific mappings and forward allowed calls in the next slice.
 
 For nonlocal use, put HTTP behind TLS and restrict access to the trusted control
-plane. Multi-tenant isolation, separate service/administrator credentials,
-identity-provider integration, policy registries, and signing-key rotation are
+plane. Multi-tenant isolation, external identity-provider integration, MFA,
+policy registries, and signing-key rotation are
 not implemented in this slice.
 
 ## API
@@ -80,7 +78,8 @@ conflicts return 409; malformed input returns 400. Authorization denials return
 | `POST /v1/envelopes/{id}/delegate` | `{ "child": {...} }`; persists a signed narrowing on ALLOW, 201 |
 | `POST /v1/evaluate/handoff` | `{ "parent_envelope_id": "...", "child": {...} }`; records decision without issuing child |
 | `POST /v1/evaluate/action` | Normalized action request below; 200 ALLOW or 403 DENY |
-| `POST /v1/approvals` | Scoped approval below; returns approval ID, 201 |
+| `POST /v1/approvals` | Refund-manager session; scoped approval below; returns attributed approval ID, 201 |
+| `GET /v1/runs/{runId}/approvals` | Most recent 100 attributed approvals, consumption state, server timestamp |
 | `POST /v1/envelopes/{id}/revoke` | No body; idempotently revokes envelope and effectively its descendants |
 | `GET /v1/runs/{runId}/chain` | Envelopes, handoffs, and action decisions |
 | `GET /v1/runs/{runId}/violations` | Ordered policy violation records |
@@ -136,13 +135,15 @@ Example approval:
   "action": "refunds.create",
   "resource": "orders:48319",
   "arguments": {"order_id": "48319", "amount": 825},
-  "approved_by": "manager_193",
-  "role": "refund_manager",
   "expires_at": "2098-01-01T00:00:00Z"
 }
 ```
 
 Choose an approval expiry in the future and no later than the envelope expiry.
+Use a refund-manager session token. Do not supply `approved_by` or `role`: the API
+derives them from the session. Operator approvals currently cover `refunds.create`
+with exact `order_id` and positive integer `amount` arguments; the same scope
+cannot be approved twice, even after consumption.
 Approval arguments must exactly match the authorized arguments, including
 critical parameters such as amount. The server stores only their SHA-256 hash.
 This initial implementation uses exact arguments rather than the PRD's optional
@@ -160,11 +161,13 @@ provide end-to-end exactly-once behavior if a client loses the response.
 ## Storage and audit integrity
 
 Migration creates agents, runs, envelopes, handoffs, approvals, tool_actions,
-violations, audit_events, server_metadata, and schema_migrations. Envelopes retain
+violations, audit_events, server_metadata, schema_migrations, operators,
+operator_sessions, and login_limits. Envelopes retain
 the full signed JSON. Handoffs retain decisions; actions retain argument hashes
 and decisions, never raw tool arguments. Audit action payloads retain IDs,
 resource/data-class metadata, argument hashes, decisions, and consumed approval
-IDs. Approval audit entries also omit raw arguments.
+IDs. Operator approval entries record the refund amount and attributed operator
+identity alongside the argument hash; arbitrary raw tool arguments are not retained.
 
 Service transactions use PostgreSQL's
 [transaction-scoped advisory lock](https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS)
@@ -220,4 +223,4 @@ newly created runs may shift later pages between requests.
 Statistics include runs, evaluated handoffs, blocked handoffs, blocked tool actions,
 and distinct policy versions referenced by stored envelopes. They cover the whole
 workspace regardless of search/filter. Policy versions are not an active-policy
-registry. The endpoint requires the same control bearer token as other API routes.
+registry. The endpoint accepts an operator session or the service bearer token.

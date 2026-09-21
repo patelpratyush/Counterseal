@@ -1,114 +1,83 @@
 # Counterseal dashboard
 
-Next.js App Router, TypeScript, shadcn/ui (Base UI), and React Flow. The overview
-and run pages render on the server; the graph and inspector load on the client.
-Fonts are bundled locally. The Go control token never enters browser props or storage.
+Next.js App Router, TypeScript, shadcn/ui (Base UI), and React Flow. Run pages render
+on the server; the graph, inspector, and approval form use client components.
+Individual operator accounts replace the shared viewer password.
 
 ## One-command local preview
-
-From the repository root:
 
 ```sh
 ./start.sh
 ```
 
-This starts a dedicated PostgreSQL cluster over a private Unix socket, the Go API,
-and Next.js development server. It creates one simulated agent workflow for an
-empty preview database and opens the browser. Use the password printed in the
-terminal. Ctrl+C stops the services; your records, signing key, and credentials
-remain in the Git-ignored `.local-preview/` directory (owner-only permissions).
-The first start installs dependencies; subsequent starts reuse them unless the
-npm lockfile changes. The preview has its own credentials and overrides inherited
-API settings only for its child processes; it does not rewrite `.env.local`.
+The launcher prepares a private PostgreSQL cluster, the Go API, an initial Java
+workflow, and an initial `operator` account. It prints the URL, username, and initial
+password. Ctrl+C stops the services; `.local-preview/` preserves data and credentials.
+Existing accounts are never reset on startup.
 
-Prerequisites: Java 21+, Maven, Go, Node/npm, PostgreSQL tools, Bash, jq, curl, and OpenSSL. On macOS they can
-be installed with Homebrew. The launcher discovers standard PostgreSQL 18
-Homebrew paths. It uses port 3000 when available and otherwise prints a free port.
-
-Options: `--no-open`, `--no-seed`, `--port 3001`, or `--check` (start, verify, stop).
-`HANDOFFGUARD_PREVIEW_DIR` can override the saved-state directory. The dashboard
-development build still supports only one preview at a time per checkout.
-Logs are in `.local-preview/`. Run only one preview at a time. This launcher is for
-local development, not production deployment. It uses the existing single-viewer
-session model described below.
+Requires Go, Node/npm, PostgreSQL tools, Java 21+, Maven, Bash, jq, curl, and OpenSSL.
+Options: `--no-open`, `--no-seed`, `--port 3001`, or `--check`. Logs and saved data live
+in `.local-preview/`; only one local preview per checkout should run at a time.
 
 ## Manual setup
 
-Start the Go API first, following [the server guide](../docs/server.md). Then:
+Start the Go API and [provision an operator](../docs/operator-accounts.md). Then:
 
 ```sh
 cd dashboard
 npm ci
 cp .env.example .env.local
-```
-
-Set these values in `.env.local`:
-
-- `HANDOFFGUARD_SERVER_URL`: Go API URL; HTTPS or loopback HTTP.
-- `HANDOFFGUARD_API_TOKEN`: the same token used by the Go server.
-- `HANDOFFGUARD_DASHBOARD_PASSWORD`: a separate viewer password, at least 16 characters.
-- `HANDOFFGUARD_DASHBOARD_SECRET`: a random session signing secret, at least 32 characters.
-
-Generate a random password/secret with `openssl rand -hex 32`. Never use
-`NEXT_PUBLIC_` for credentials. `.env.local` is ignored by Git.
-
-```sh
 npm run dev -- --hostname 127.0.0.1
 ```
 
-Open http://localhost:3000 and sign in with the viewer password. Run the agent
-integration demo to populate real records. Empty workspaces remain empty; there
-is no fallback to fabricated metrics.
+Set only `HANDOFFGUARD_SERVER_URL` in `.env.local` (HTTPS or loopback HTTP).
+The dashboard does not need `HANDOFFGUARD_API_TOKEN`, a shared dashboard password,
+or a session signing secret. Remove obsolete values from manually maintained
+configuration. Never use `NEXT_PUBLIC_` for credentials.
 
-## What it shows
+## Console capabilities
 
-- Counts of runs, handoffs, blocked decisions, and referenced policy versions.
-- Run search by ID/purpose, a blocked-run filter, and pagination (20 rows/page).
-- Issued envelopes and denied handoff proposals in an interactive graph.
-- Constraints, before/after field comparisons, violations, and authorization history.
-- On-demand verification of the stored audit chain and envelope signatures.
-- Light/dark themes, keyboard-accessible inspection controls, and responsive layout.
+- Searchable runs, blocked-run filtering, pagination, and workspace counts.
+- Interactive delegation graph, inherited constraints, before/after differences,
+  and denied handoff proposals.
+- Audit verification, authorization history, light/dark themes, and mobile layouts.
+- Refund-manager approval of an exact order/amount with a named signer.
+- Approval history showing the operator, timestamp, amount, and consumption state.
+- Read-only viewer accounts; server-enforced role restrictions.
 
-A policy version count is not a count of active policies. An ALLOW tool decision
-is authorization, not confirmation of successful upstream execution. An audit
-check verifies stored integrity, not current authority or external tamper checkpoints.
-The UI does not create approvals, revoke authority, or edit policies.
+The approval form does not execute the refund. Use the Java prepare/approve/resume
+flow in the [operator guide](../docs/operator-accounts.md). An ALLOW decision records
+authorization, not successful execution; audit verification checks stored integrity.
 
-## Deployment and authentication
+## Authentication
 
-`npm run build` creates a standalone-capable build; `npm start` runs the server.
-Deploy behind HTTPS: production viewer cookies are Secure, HttpOnly, SameSite=Strict,
-and expire after eight hours. Both password and signing-secret rotation invalidate
-existing sessions. Sign-out removes the browser cookie; a previously copied cookie
-remains valid until expiry or rotation. No credentials are sent to the client bundle.
+The Go API owns accounts and opaque, hashed sessions in PostgreSQL. Next.js stores
+the token in an HttpOnly, SameSite=Strict cookie (Secure in production), and forwards
+it server-side. Sessions expire after eight hours. Logout, password reset, and account
+disablement revoke sessions on the server. Every protected request revalidates identity.
 
-This is a single-operator viewer with a process-local login limit (10 attempts per
-minute), not a multi-user identity service. Put shared/public deployments behind
-an authenticated access proxy or add OIDC and durable rate limiting. The dashboard
-server holds the powerful Go control token, so restrict access to its host and environment.
-Next.js Server Actions apply origin checks; do not broaden allowed origins casually.
+Deploy behind HTTPS outside local development. Next.js Server Actions enforce origin
+checks; do not broaden allowed origins casually. This is a single-tenant local-account
+system, without SSO, MFA, or self-service password recovery. Provision users with the
+Go CLI using host database access. Login throttling is shared in PostgreSQL.
 
-## Verify
+## Verification
 
 ```sh
 npm run lint
 npm run build
+npx playwright install chromium
 cd ..
-bash scripts/test-postgres.sh go test ./internal/server -run TestDashboardOverview
 bash scripts/test-postgres.sh bash scripts/smoke-dashboard.sh
 ```
 
-Browser tests use TypeScript Playwright from the npm lockfile. Install Chromium with
-`npx playwright install chromium` from the dashboard directory.
-They seed an isolated Go API, start the production dashboard with temporary viewer
-credentials, check login/search/graph/denials/audit/theme/mobile/logout, and shut down.
-Screenshots are written to `/tmp/handoffguard-{overview,run,mobile}.png`.
-The test server uses port 4173 by default; set `HG_E2E_PORT` to choose another port.
-It never reuses an existing server.
+The TypeScript browser test uses disposable accounts and a real Go API/database.
+It covers login, search, graph inspection, approval attribution and duplicate rejection,
+viewer restrictions, audit verification, themes, mobile layout, logout, and rejection
+of a copied logged-out cookie. Port 4173 is used by default (`HG_E2E_PORT` overrides it).
 
-## Container preview
+## Docker
 
-`./compose.sh up` from the repository root starts the production dashboard at
-http://localhost:3100 with PostgreSQL and the Go API. `./compose.sh demo` adds a
-Java workflow. See [Docker Compose](../docs/docker.md) for credentials, persistent
-volumes, and the container browser test.
+`./compose.sh up` starts the console at http://localhost:3100. Sign in as `operator`
+with the printed initial password. See [Docker setup](../docs/docker.md) and the
+[operator approval guide](../docs/operator-accounts.md) for named accounts and demos.

@@ -26,7 +26,7 @@ To run the whole stack with Docker:
 ./compose.sh demo
 ```
 
-Open http://localhost:3100 using the password printed by the launcher.
+Open http://localhost:3100 and sign in as `operator` with the initial password printed by the launcher.
 See [Docker setup](docs/docker.md) for persistence, approval demos, and cleanup.
 
 To build the Go CLI locally:
@@ -124,10 +124,9 @@ export HANDOFFGUARD_API_TOKEN="$(openssl rand -hex 32)"
 ./handoffguard server --key "$HOME/.handoffguard/server.priv"
 ```
 
-Run `bash scripts/demo-server.sh` in a shell with the same token to exercise
-DENY → approval → ALLOW → replay DENY and verify the audit chain. This API is for
-trusted control-plane callers; agent and approver identity are supplied by that
-caller until identity integration is added.
+Use the [operator approval guide](docs/operator-accounts.md) to prepare a Java refund,
+approve it as a signed-in manager, and resume. Human identity and role come from
+the operator session. Agent identity remains a trusted control-plane assertion.
 
 Run `bash scripts/test-postgres.sh` for the integration suite against a
 disposable local PostgreSQL cluster (requires `initdb` and `pg_ctl` on PATH).
@@ -149,7 +148,7 @@ identity or envelope; only mapped and authorized tool calls reach upstream.
 Run the guarded-versus-unguarded simulated refund demo against a running API:
 
 ```bash
-bash scripts/demo-gateway.sh
+bash scripts/test-postgres.sh bash scripts/smoke-gateway.sh
 ```
 
 Or run the complete CLI demo with a disposable database and API server:
@@ -184,25 +183,27 @@ Start the full local preview with one command:
 
 It prepares a private PostgreSQL database, starts the Go API, adds a simulated
 agent workflow on the first run, and opens the dashboard. The terminal prints
-your viewer password. Press Ctrl+C to stop; `.local-preview/` preserves your data.
+your initial operator credentials. Press Ctrl+C to stop; `.local-preview/` preserves your data.
 Requires Go, Node/npm, PostgreSQL tools, Java 21+, Maven, Bash, jq, curl, and OpenSSL. Existing API services
 and `dashboard/.env.local` are not modified. Use `./start.sh --help` for options.
 
 
 The [Next.js dashboard](dashboard/README.md) provides searchable run summaries,
 an interactive React Flow delegation graph, constraint inspection, decision history,
-and audit verification. shadcn/ui components support light/dark themes and mobile layouts.
+audit verification, and attributed refund approvals. Individual accounts have viewer
+or refund-manager roles. shadcn/ui components support light/dark themes and mobile layouts.
 
 ```bash
 cd dashboard
 npm ci
 cp .env.example .env.local
-# Configure the API connection and separate viewer credentials in .env.local.
+# Configure HANDOFFGUARD_SERVER_URL; provision operator accounts with the Go CLI.
 npm run dev -- --hostname 127.0.0.1
 ```
 
-The Go control token stays on the Next.js server. Sign in at http://localhost:3000
-with the viewer password. See the dashboard guide for production HTTPS and session limitations.
+Sign in at http://localhost:3000 with your individual account. The dashboard uses
+revocable operator sessions and does not need the Go service token. See the
+[operator guide](docs/operator-accounts.md) for accounts and approval commands.
 
 ## CI and policy gate
 

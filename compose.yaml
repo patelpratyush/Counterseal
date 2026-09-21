@@ -24,6 +24,7 @@ services:
     environment:
       HANDOFFGUARD_DATABASE_URL: postgresql://handoffguard:${HG_POSTGRES_PASSWORD:?Missing database password}@db:5432/handoffguard?sslmode=disable
       HANDOFFGUARD_API_TOKEN: ${HG_API_TOKEN:?Missing API token}
+      HANDOFFGUARD_OPERATOR_PASSWORD: ${HG_DASHBOARD_PASSWORD:?Missing initial operator password}
     volumes:
       - signing-keys:/data
     depends_on:
@@ -47,9 +48,6 @@ services:
     network_mode: service:api
     environment:
       HANDOFFGUARD_SERVER_URL: http://127.0.0.1:8080
-      HANDOFFGUARD_API_TOKEN: ${HG_API_TOKEN:?Missing API token}
-      HANDOFFGUARD_DASHBOARD_PASSWORD: ${HG_DASHBOARD_PASSWORD:?Missing viewer password}
-      HANDOFFGUARD_DASHBOARD_SECRET: ${HG_DASHBOARD_SECRET:?Missing session secret}
     depends_on:
       api:
         condition: service_healthy

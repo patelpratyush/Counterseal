@@ -24,10 +24,16 @@ export HANDOFFGUARD_DATABASE_URL="$HANDOFFGUARD_TEST_DATABASE_URL"
 export HANDOFFGUARD_API_TOKEN="$(openssl rand -hex 32)"
 go build -o "$HANDOFFGUARD_BINARY" ./cmd/cli
 "$HANDOFFGUARD_BINARY" keygen --out "$work/key" >/dev/null
-"$HANDOFFGUARD_BINARY" server --key "$work/key.priv" --addr 127.0.0.1:0 >"$work/server.log" 2>&1 &
+demo_args=()
+if [[ "${HG_TEST_DEMO_APPROVALS:-0}" == 1 ]]; then demo_args+=(--allow-demo-approvals); fi
+"$HANDOFFGUARD_BINARY" server --key "$work/key.priv" --addr 127.0.0.1:0 "${demo_args[@]}" >"$work/server.log" 2>&1 &
 api_pid=$!
 export HANDOFFGUARD_SERVER_URL
 HANDOFFGUARD_SERVER_URL="$(api_url_from_log "$api_pid" "$work/server.log")"
+export HANDOFFGUARD_OPERATOR_PASSWORD="$(openssl rand -hex 16)"
+export HANDOFFGUARD_VIEWER_PASSWORD="$(openssl rand -hex 16)"
+"$HANDOFFGUARD_BINARY" operator create --username morgan --name 'Morgan Chen' --role refund_manager >/dev/null
+"$HANDOFFGUARD_BINARY" operator create --username reader --name 'Read Only' --role viewer --password-env HANDOFFGUARD_VIEWER_PASSWORD >/dev/null
 "$@" &
 child_pid=$!
 wait "$child_pid"

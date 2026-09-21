@@ -11,7 +11,7 @@ a Next.js console makes the decisions inspectable.
 ```mermaid
 flowchart TD
     Viewer[Console viewer] --> Dashboard[Next.js dashboard]
-    Dashboard -->|Server-side control token| API[Go control API]
+    Dashboard -->|Operator session| API[Go control API]
     Operator[Trusted demo operator] --> Java[Java 21 / Spring Boot workflow]
     Java -->|Create envelopes, delegate, approve| API
     Java -->|MCP stdio: Support / Billing / Notification| Gateway[Go gateway per stage]
@@ -24,11 +24,12 @@ flowchart TD
 
 The Java process is a trusted orchestrator. Each gateway fixes its agent identity
 and envelope, maps tool arguments to resources, and asks the control API for an
-authorization decision. The dashboard keeps its control token on the server.
+authorization decision. The dashboard forwards the authenticated operator session
+from its HttpOnly cookie and does not require the service token.
 The API persists audit decisions; Java saves workflow receipts and stages in durable
 local checkpoints. [Crash recovery](workflow-recovery.md) skips completed tool calls
-and stops uncertain outcomes for reconciliation. The system does not yet provide
-independent operator identities or distributed workflow recovery.
+and stops uncertain outcomes for reconciliation. Individual local accounts authorize
+refunds; external SSO and distributed workflow recovery are not yet supplied.
 
 ## Screenshots and recording
 
@@ -41,11 +42,14 @@ not invoke the Java workflow or a live model.
 
 ![Delegation graph with successful audit verification](assets/delegation.png)
 
+![An exact refund approved by a named operator](assets/approvals.png)
+
 <img src="assets/mobile.png" alt="Counterseal delegation view on mobile in dark mode" width="390">
 
 [Watch or download the automated browser walkthrough](assets/walkthrough.webm).
-The silent recording includes login checks, search, an expanded-authority denial,
-an allowed handoff, audit verification, dark mode, mobile layout, and logout.
+The silent recording includes individual login, search, an expanded-authority denial,
+an allowed handoff, audit verification, named approval and duplicate rejection,
+dark mode, mobile layout, logout, and viewer restrictions.
 Playback support depends on the browser; download the WebM if GitHub shows a file page.
 
 ## Two-minute narrated demo script
@@ -64,12 +68,12 @@ Open http://localhost:3100. The commands below use simulated refunds only.
 | --- | --- | --- |
 | 0:00–0:20 | Runs overview | “An agent handing work to another agent must not silently give it more authority.” |
 | 0:20–0:45 | Open the Java demo run and inspect handoffs | “Support delegates to Billing, then Notification. Signed envelopes carry the allowed actions and inherited constraints.” |
-| 0:45–1:10 | Run `./compose.sh demo --amount=825`, refresh, inspect the new run's decision history | “This simulated refund exceeds the approval threshold. The gateway denies the call before forwarding it.” The command's nonzero exit is expected. |
-| 1:10–1:35 | Run `./compose.sh demo --amount=825 --approve-demo-refund`, refresh, open the new run | “A trusted demo operator grants approval scoped to this refund. The same workflow can now proceed.” This creates a new run; it does not resume the denied run. |
+| 0:45–1:10 | Run `./compose.sh demo --amount=825 --prepare-approval --state=/data/workflows/review`, open the printed run | “This simulated refund exceeds the approval threshold. The workflow stops before attempting Billing so a manager can review it.” |
+| 1:10–1:35 | Approve Billing / order 48319 / amount 825 in the console, then run `./compose.sh demo --resume --state=/data/workflows/review` | “My signed-in manager account approves this exact refund. The same workflow resumes and consumes that approval once.” |
 | 1:35–1:50 | Click Verify audit | “The console verifies the stored audit chain, so the decision history can be inspected.” |
 | 1:50–2:00 | Architecture diagram | “Java orchestrates, Go enforces, PostgreSQL stores decisions, and Next.js presents the evidence.” |
 
-The approval flag simulates a trusted operator. This demo has no live LLM and
+The approval is attributed to an individual local account. This demo has no live LLM and
 performs no real payment or email operations. Avoid describing it as a production
 payment system or as preventing every form of prompt injection.
 

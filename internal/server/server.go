@@ -24,12 +24,13 @@ import (
 )
 
 type Server struct {
-	db         *store.Store
-	key        ed25519.PrivateKey
-	pub        ed25519.PublicKey
-	tokenHash  [32]byte
-	engine     *policy.Engine
-	conditions *policy.Conditions
+	AllowDemoApprovals bool // Explicit compatibility mode for isolated demonstrations/tests only.
+	db                 *store.Store
+	key                ed25519.PrivateKey
+	pub                ed25519.PublicKey
+	tokenHash          [32]byte
+	engine             *policy.Engine
+	conditions         *policy.Conditions
 }
 
 func New(ctx context.Context, db *store.Store, key ed25519.PrivateKey, token string) (*Server, error) {
@@ -82,6 +83,10 @@ type endpoint func(context.Context, pgx.Tx, *http.Request) (any, int, error)
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("POST /v1/operators/login", s.wrapEndpoint(s.login, true))
+	mux.HandleFunc("GET /v1/operators/me", s.wrap(s.me))
+	mux.HandleFunc("POST /v1/operators/logout", s.wrap(s.logout))
+	mux.HandleFunc("GET /v1/runs/{runId}/approvals", s.wrap(s.listApprovals))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
@@ -107,11 +112,15 @@ func (s *Server) Handler() http.Handler {
 }
 
 func (s *Server) wrap(fn endpoint) http.HandlerFunc {
+	return s.wrapEndpoint(fn, false)
+}
+func (s *Server) wrapEndpoint(fn endpoint, public bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
 		token := strings.TrimPrefix(header, "Bearer ")
 		hash := sha256.Sum256([]byte(token))
-		if !strings.HasPrefix(header, "Bearer ") || subtle.ConstantTimeCompare(hash[:], s.tokenHash[:]) != 1 {
+		service := strings.HasPrefix(header, "Bearer ") && subtle.ConstantTimeCompare(hash[:], s.tokenHash[:]) == 1
+		if !public && !strings.HasPrefix(header, "Bearer ") {
 			writeJSON(w, 401, map[string]string{"error": "unauthorized"})
 			return
 		}
@@ -120,7 +129,21 @@ func (s *Server) wrap(fn endpoint) http.HandlerFunc {
 		defer cancel()
 		var response any
 		var status int
-		err := s.db.Transaction(ctx, func(tx pgx.Tx) error { var err error; response, status, err = fn(ctx, tx, r); return err })
+		err := s.db.Transaction(ctx, func(tx pgx.Tx) error {
+			if !public && !service {
+				op, err := s.authenticateOperator(ctx, tx, r)
+				if err != nil {
+					return err
+				}
+				if !operatorRoute(r) {
+					return denied("operator cannot perform service operations")
+				}
+				ctx = context.WithValue(ctx, operatorKey{}, op)
+			}
+			var err error
+			response, status, err = fn(ctx, tx, r)
+			return err
+		})
 		if err != nil {
 			var api *apiError
 			var pg *pgconn.PgError
@@ -201,6 +224,7 @@ func uniqueJSON(raw []byte) error {
 	return nil
 }
 func writeJSON(w http.ResponseWriter, status int, value any) {
+	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)

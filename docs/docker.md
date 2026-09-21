@@ -11,8 +11,8 @@ From the repository root:
 ```
 
 The first command builds the images, starts PostgreSQL, the Go API, and the
-production Next.js dashboard, and waits for health checks. It prints the viewer
-password and dashboard address: **http://localhost:3100**. The second command
+production Next.js dashboard, and waits for health checks. It prints the initial
+password for username `operator` and dashboard address: **http://localhost:3100**. The second command
 runs the Java/Spring Boot Support → Billing → Notification demo and writes real
 audit records to the container database. Refresh the dashboard to see the run.
 Every demo invocation creates another run. All refunds and notifications are simulated.
@@ -33,19 +33,22 @@ The Compose dashboard uses port 3100 to avoid the development server on port 300
 ## Approval demonstration
 
 ```sh
-# Expected to fail: approval is missing.
-./compose.sh demo --amount=825
-# Explicit demo-operator approval, scoped to the exact refund.
-./compose.sh demo --amount=825 --approve-demo-refund
+# Prepare without attempting the refund.
+./compose.sh demo --amount=825 --prepare-approval --state=/data/workflows/review
+# Approve the printed run in the console: Billing envelope, order 48319, amount 825.
+./compose.sh demo --resume --state=/data/workflows/review
 ```
 
 These are Java command-line options: use `--amount=825`, with an equals sign.
-The approval flag is an operator simulation, not an authenticated approval UI.
+The [approval UI](operator-accounts.md) requires a refund-manager account and records
+the authenticated decision-maker. The old self-approval flag is no longer accepted.
 
 ## Configuration and persistence
 
 `compose.sh up` creates `.env.compose` with random database, API, and viewer
-credentials. The file is private to its owner and excluded from Git and Docker
+credentials. `HG_DASHBOARD_PASSWORD` now supplies only the initial `operator` account
+password; `HG_DASHBOARD_SECRET` is a retained legacy setting and is unused.
+The file is private to its owner and excluded from Git and Docker
 build contexts. Keep it for subsequent starts. To change the host port, edit
 `HG_DASHBOARD_PORT` in that file and run `./compose.sh up` again.
 
@@ -93,8 +96,8 @@ node_modules, Maven targets, and preview state are excluded from build contexts.
 
 This configuration is a local portfolio/demo deployment. For a public deployment,
 add HTTPS termination and production identity/authorization, database backups,
-secret management, and operational monitoring. The dashboard's existing single-viewer
-model still applies. Java supports [durable local recovery](workflow-recovery.md),
+secret management, and operational monitoring. The dashboard uses local accounts
+without SSO/MFA or team isolation. Java supports [durable local recovery](workflow-recovery.md),
 but uncertain outcomes require reconciliation and distributed recovery is not supplied. Keep using
 `localhost` for this local browser URL; production session cookies require a secure
 browser context.

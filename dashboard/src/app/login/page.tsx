@@ -7,7 +7,7 @@ export default function Login() {
         <ShieldCheck size={24} /> Counterseal
       </div>
       <section className="login-card">
-        <span className="eyebrow">HANDOFFGUARD CONSOLE</span>
+        <span className="eyebrow">OPERATOR CONSOLE</span>
         <h1>
           Sign in to your
           <br />
@@ -18,7 +18,7 @@ export default function Login() {
           decisions.
         </p>
         <LoginForm />
-        <div className="login-foot">Private workspace · Read-only access</div>
+        <div className="login-foot">Individual accounts · Attributed decisions</div>
       </section>
       <div className="login-grid" aria-hidden="true" />
     </main>

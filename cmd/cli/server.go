@@ -19,6 +19,7 @@ import (
 
 func newServerCmd() *cobra.Command {
 	var addr, keyPath string
+	var demoApprovals bool
 	command := &cobra.Command{Use: "server", Short: "Run the PostgreSQL-backed control API", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, args []string) error {
 		url, token := os.Getenv("HANDOFFGUARD_DATABASE_URL"), os.Getenv("HANDOFFGUARD_API_TOKEN")
 		if url == "" || token == "" {
@@ -44,6 +45,7 @@ func newServerCmd() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		api.AllowDemoApprovals = demoApprovals
 		httpServer := &http.Server{Addr: addr, Handler: api.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 20 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 		listener, err := net.Listen("tcp", addr)
 		if err != nil {
@@ -73,6 +75,7 @@ func newServerCmd() *cobra.Command {
 		}
 	}}
 	command.Flags().StringVar(&addr, "addr", "127.0.0.1:8080", "HTTP listen address")
+	command.Flags().BoolVar(&demoApprovals, "allow-demo-approvals", false, "allow caller-asserted approvals in isolated test/demo environments only")
 	command.Flags().StringVar(&keyPath, "key", "", "server Ed25519 private key file (required)")
 	_ = command.MarkFlagRequired("key")
 	return command

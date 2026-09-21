@@ -25,9 +25,31 @@ type approvalRequest struct {
 }
 
 func (s *Server) approve(ctx context.Context, tx pgx.Tx, r *http.Request) (any, int, error) {
+	op := currentOperator(ctx)
+	if op == nil && !s.AllowDemoApprovals {
+		return nil, 0, denied("an authenticated refund manager must approve this request")
+	}
+	if op != nil && op.Role != "refund_manager" {
+		return nil, 0, denied("refund_manager role required")
+	}
 	var req approvalRequest
 	if err := decode(r, &req); err != nil {
 		return nil, 0, err
+	}
+	var operatorID any
+	var refundAmount any
+	if op != nil {
+		if req.ApprovedBy != "" || req.Role != "" {
+			return nil, 0, bad("approval identity and role come from the signed-in operator")
+		}
+		req.ApprovedBy, req.Role, operatorID = op.Username, op.Role, op.ID
+		amount, ok := req.Arguments["amount"].(json.Number)
+		integer, amountErr := strconv.ParseInt(string(amount), 10, 64)
+		order, orderOK := req.Arguments["order_id"].(string)
+		if req.Action != "refunds.create" || !ok || amountErr != nil || integer <= 0 || integer > 9007199254740991 || !orderOK || len(req.Arguments) != 2 || req.Resource != "orders:"+order {
+			return nil, 0, bad("refund approval requires exact order_id and positive integer amount")
+		}
+		refundAmount = integer
 	}
 	v, err := load(ctx, tx, req.EnvelopeID)
 	if err != nil {
@@ -63,11 +85,25 @@ func (s *Server) approve(ctx context.Context, tx pgx.Tx, r *http.Request) (any, 
 	if err != nil {
 		return nil, 0, err
 	}
+	if op != nil {
+		var duplicate bool
+		if err = tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM approvals WHERE envelope_id=$1 AND action=$2 AND resource=$3 AND arguments_hash=$4 AND approver_role=$5)", req.EnvelopeID, req.Action, req.Resource, hash, req.Role).Scan(&duplicate); err != nil {
+			return nil, 0, err
+		}
+		if duplicate {
+			return nil, 0, &apiError{409, "this exact refund already has an approval; do not approve it twice"}
+		}
+	}
 	id := newID("approval_")
-	if _, err = tx.Exec(ctx, "INSERT INTO approvals(id,envelope_id,action,resource,arguments_hash,approver_id,approver_role,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)", id, req.EnvelopeID, req.Action, req.Resource, hash, req.ApprovedBy, req.Role, req.ExpiresAt); err != nil {
+	if _, err = tx.Exec(ctx, "INSERT INTO approvals(id,envelope_id,action,resource,arguments_hash,approver_id,approver_role,expires_at,operator_id,refund_amount) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)", id, req.EnvelopeID, req.Action, req.Resource, hash, req.ApprovedBy, req.Role, req.ExpiresAt, operatorID, refundAmount); err != nil {
 		return nil, 0, err
 	}
 	result := map[string]any{"id": id, "envelope_id": req.EnvelopeID, "action": req.Action, "resource": req.Resource, "arguments_hash": hash, "approved_by": req.ApprovedBy, "role": req.Role, "expires_at": req.ExpiresAt, "status": "APPROVED"}
+	if op != nil {
+		result["operator_id"] = op.ID
+		result["operator_name"] = op.DisplayName
+		result["refund_amount"] = refundAmount
+	}
 	if err = appendAudit(ctx, tx, v.RunID, "approval.created", result); err != nil {
 		return nil, 0, err
 	}

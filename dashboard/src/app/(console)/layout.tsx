@@ -11,7 +11,8 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireSession();
+  const { operator } = await requireSession();
+  const role = operator.role === "refund_manager" ? "Refund manager" : "Viewer";
   return (
     <div className="console">
       <a className="skip-link" href="#main">
@@ -45,12 +46,12 @@ export default async function Layout({
         <div className="sidebar-bottom">
           <div className="access-note">
             <LockKeyhole size={14} />
-            <span>Read-only access</span>
+            <span>{operator.role === "refund_manager" ? "Can approve refunds" : "Read-only access"}</span>
           </div>
           <div className="user-row">
-            <span className="avatar">OP</span>
+            <span className="avatar">{operator.display_name.slice(0, 2).toUpperCase()}</span>
             <div>
-              Operator<small>Read-only viewer</small>
+              {operator.display_name}<small>{role} · {operator.username}</small>
             </div>
             <form action={logout}>
               <Button
@@ -73,7 +74,7 @@ export default async function Layout({
           </span>
           <div>
             <span className="viewer-label">
-              <LockKeyhole size={12} /> Viewer
+              <LockKeyhole size={12} /> {role}
             </span>
             <ThemeSwitch />
             <form action={logout} className="mobile-signout">

@@ -23,16 +23,18 @@ Start the Go API using [the server guide](../../docs/server.md), or run `./start
 to start the whole local preview and seed one Java workflow in an empty database.
 Existing preview data is preserved and is not seeded again.
 
-The default amount is 100. Above 500, Billing is denied unless the trusted demo
-operator explicitly grants approval for the exact envelope and refund arguments:
+The default amount is 100. Above 500, Billing requires approval by an authenticated
+refund manager. Prepare the workflow without attempting the refund:
 
 ```sh
-java -jar integrations/java-workflow/target/handoffguard-workflow.jar --amount=825
-java -jar integrations/java-workflow/target/handoffguard-workflow.jar --amount=825 --approve-demo-refund
+java -jar integrations/java-workflow/target/handoffguard-workflow.jar --amount=825 --prepare-approval --state=.workflow-state/review
+# Approve the printed run/envelope, order 48319, and amount 825 in the console.
+java -jar integrations/java-workflow/target/handoffguard-workflow.jar --resume --state=.workflow-state/review
 ```
 
-The first command exits nonzero. The approval flag is a simulation shortcut for an
-operator; it is never exposed as an agent tool. Refunds and notifications are simulated.
+`--prepare-approval` exits successfully with an `AWAITING_OPERATOR_APPROVAL` result.
+`--approve-demo-refund` is no longer accepted. See the [operator guide](../../docs/operator-accounts.md).
+Attempting a high refund without approval still fails. Refunds and notifications are simulated.
 All runs are deterministic, with no LLM, API key, or billable request. The former
 Python integration's optional live-model mode is not implemented in Java.
 
@@ -71,8 +73,8 @@ retrying it. See [recovery behavior, crash tests, and limitations](../../docs/wo
   events containing only run/stage identifiers. There is no external trace exporter.
 
 This is a trusted orchestration process, not a sandbox or independently authenticated
-agent identity. The control token can create approvals. Public deployments need an
-actual operator identity system. Audit decisions are durable in PostgreSQL; workflow
+agent identity. Its control token cannot create approvals in the default server mode.
+Approvals come from individual operator sessions. Audit decisions are durable in PostgreSQL; workflow
 receipts and stage state are checkpointed on a local POSIX filesystem. This supports
 single-host recovery, not distributed execution or automatic reconciliation of
 uncertain outcomes. Keep checkpoints intact; do not retry an uncertain refund by
@@ -100,6 +102,9 @@ verify that safe resume sends only the remaining tool call while uncertain resum
 does not send a duplicate refund.
 
 Additional demonstrations against a running API:
+
+These legacy assertion-based scenarios require an isolated API started with
+`--allow-demo-approvals`. Use the operator UI flow above for the default server.
 
 ```sh
 bash scripts/demo-gateway.sh

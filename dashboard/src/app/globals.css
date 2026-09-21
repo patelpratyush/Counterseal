@@ -1702,3 +1702,38 @@ h3 {
     width: auto;
   }
 }
+
+/* Human authorization: a compact signing form beside an attributed decision ledger. */
+.approval-ledger { margin-top: 36px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.approval-heading { padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--border); }
+.approval-heading h2 { margin: 8px 0 5px; font-size: 22px; letter-spacing: -.5px; }
+.approval-heading p, .approval-form > p, .approval-empty p { color: var(--muted-foreground); line-height: 1.7; }
+.approval-heading > svg { color: var(--green); flex-shrink: 0; }
+.approval-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.approval-compose, .approval-history { padding: 28px; min-width: 0; }
+.approval-history { border-left: 1px solid var(--border); background: color-mix(in srgb, var(--muted) 20%, var(--surface)); }
+.approval-form { display: flex; flex-direction: column; gap: 13px; }
+.approval-form h3, .approval-history h3, .approval-empty h3 { font-size: 15px; font-weight: 600; }
+.approval-form label { font-size: 12px; font-weight: 600; }
+.approval-form select { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--input); border-radius: 6px; background: var(--surface); color: var(--foreground); font: inherit; }
+.approval-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.approval-fields > div { display: grid; gap: 7px; }
+.approval-scope { font-size: 11px; }
+.approval-confirm { display: flex; gap: 9px; align-items: flex-start; line-height: 1.6; margin: 5px 0; }
+.approval-confirm input { margin-top: 3px; accent-color: var(--green); }
+.approval-signer { display: flex; gap: 10px; align-items: center; padding: 14px 0; border-top: 1px solid var(--border); }
+.approval-signer svg { color: var(--green); }
+.approval-signer small { display: block; color: var(--muted-foreground); margin-top: 3px; }
+.approval-form > button { align-self: flex-start; }
+.approval-success { color: var(--green) !important; background: var(--green-soft); padding: 12px; border-radius: 6px; }
+.approval-history h3 > span { margin-left: 8px; color: var(--muted-foreground); font-size: 12px; }
+.approval-history ol { padding: 0; margin: 20px 0 0; list-style: none; }
+.approval-history li { padding: 18px 0; border-top: 1px solid var(--border); }
+.approval-record-title { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.approval-record-title > strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.approval-status { font-size: 11px; background: var(--green-soft); color: var(--green); padding: 4px 8px; border-radius: 4px; align-self: center; }
+.approval-history li p { margin: 6px 0; }
+.approval-history li small { display: block; color: var(--muted-foreground); font-size: 11px; margin-top: 7px; overflow-wrap: anywhere; }
+.approval-empty { color: var(--muted-foreground); padding: 18px 0; }
+@media (max-width: 900px) { .approval-columns { grid-template-columns: 1fr; } .approval-history { border-left: 0; border-top: 1px solid var(--border); } }
+@media (max-width: 600px) { .approval-heading, .approval-compose, .approval-history { padding: 20px; } .approval-fields { grid-template-columns: 1fr; } .approval-form > button { width: 100%; } }

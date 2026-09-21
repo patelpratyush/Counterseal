@@ -52,10 +52,9 @@ if [[ ! -f "$state/credentials.json" ]]; then
     '{api_token:$token,password:$password,secret:$secret}' > "$state/credentials.json"
 fi
 jq -e '(.api_token | type=="string" and length>=32) and (.password | type=="string" and length>=16) and (.secret | type=="string" and length>=32)' "$state/credentials.json" >/dev/null
-export HANDOFFGUARD_API_TOKEN HANDOFFGUARD_DASHBOARD_PASSWORD HANDOFFGUARD_DASHBOARD_SECRET HANDOFFGUARD_BINARY
+export HANDOFFGUARD_API_TOKEN HANDOFFGUARD_OPERATOR_PASSWORD HANDOFFGUARD_BINARY
 HANDOFFGUARD_API_TOKEN="$(jq -r .api_token "$state/credentials.json")"
-HANDOFFGUARD_DASHBOARD_PASSWORD="$(jq -r .password "$state/credentials.json")"
-HANDOFFGUARD_DASHBOARD_SECRET="$(jq -r .secret "$state/credentials.json")"
+HANDOFFGUARD_OPERATOR_PASSWORD="$(jq -r .password "$state/credentials.json")"
 HANDOFFGUARD_BINARY="$state/handoffguard"
 export NEXT_TELEMETRY_DISABLED=1 NODE_ENV=development HANDOFFGUARD_LOCAL_PREVIEW=1
 socket_dir="$(mktemp -d /tmp/hg-preview.XXXXXX)"
@@ -68,6 +67,7 @@ run_setup pg_ctl -D "$state/postgres" -l "$state/postgres.log" -o "-h '' -k $soc
 database_started=true
 export HANDOFFGUARD_DATABASE_URL="postgresql://postgres@/postgres?host=$socket_dir"
 run_setup go build -o "$HANDOFFGUARD_BINARY" ./cmd/cli
+run_setup "$HANDOFFGUARD_BINARY" operator create --username operator --name 'Local Operator' --role refund_manager --if-absent
 if [[ ! -f "$state/server.priv" ]]; then run_setup "$HANDOFFGUARD_BINARY" keygen --out "$state/server"; fi
 "$HANDOFFGUARD_BINARY" server --key "$state/server.priv" --addr 127.0.0.1:0 > "$state/api.log" 2>&1 &
 api_pid=$!
@@ -96,7 +96,9 @@ JS
 )"
 url="http://localhost:$port"
 echo 'Starting dashboard…'
-npm run dev --prefix dashboard -- --hostname 127.0.0.1 --port "$port" > "$state/dashboard.log" 2>&1 &
+env -u HANDOFFGUARD_API_TOKEN -u HANDOFFGUARD_DATABASE_URL -u HANDOFFGUARD_OPERATOR_PASSWORD \
+  -u HANDOFFGUARD_DASHBOARD_PASSWORD -u HANDOFFGUARD_DASHBOARD_SECRET \
+  npm run dev --prefix dashboard -- --hostname 127.0.0.1 --port "$port" > "$state/dashboard.log" 2>&1 &
 dashboard_pid=$!
 ready=false
 for attempt in {1..600}; do
@@ -106,7 +108,7 @@ for attempt in {1..600}; do
 done
 $ready || { echo 'Dashboard startup timed out' >&2; exit 1; }
 if $check; then echo 'Startup check passed.'; exit 0; fi
-printf '\nDashboard: %s\nPassword:  %s\n\nKeep this terminal open. Press Ctrl+C to stop.\n' "$url" "$HANDOFFGUARD_DASHBOARD_PASSWORD"
+printf '\nDashboard: %s\nUsername:  operator\nInitial password: %s\n\nKeep this terminal open. Press Ctrl+C to stop.\n' "$url" "$HANDOFFGUARD_OPERATOR_PASSWORD"
 if $open_browser; then
   if command -v open >/dev/null; then open "$url"; elif command -v xdg-open >/dev/null; then xdg-open "$url" >/dev/null 2>&1 || true; fi
 fi

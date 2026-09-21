@@ -3,16 +3,16 @@ package dev.handoffguard.workflow;
 import java.util.Set;
 import org.springframework.boot.DefaultApplicationArguments;
 
-record Invocation(int amount, boolean approve, String scenario, boolean help, String state, boolean resume) {
+record Invocation(int amount, boolean approve, String scenario, boolean help, String state, boolean resume, boolean prepareApproval) {
     static Invocation parse(String... args) {
         var options = new DefaultApplicationArguments(args);
         for (String name : options.getOptionNames()) {
-            if (!Set.of("amount", "approve-demo-refund", "help", "scenario", "state", "resume").contains(name)) {
+            if (!Set.of("amount", "prepare-approval", "help", "scenario", "state", "resume").contains(name)) {
                 throw new IllegalArgumentException("Unknown option: " + name);
             }
         }
         if (!options.getNonOptionArgs().isEmpty()) throw new IllegalArgumentException("Use --name=value options");
-        for (String flag : Set.of("approve-demo-refund", "help", "resume")) {
+        for (String flag : Set.of("prepare-approval", "help", "resume")) {
             if (options.containsOption(flag) && !options.getOptionValues(flag).isEmpty()) {
                 throw new IllegalArgumentException("--" + flag + " does not take a value");
             }
@@ -31,12 +31,13 @@ record Invocation(int amount, boolean approve, String scenario, boolean help, St
         }
         String state = states == null ? null : states.getFirst();
         boolean resume = options.containsOption("resume");
-        if ((resume || state != null) && !scenario.equals("workflow")) {
+        boolean prepare = options.containsOption("prepare-approval");
+        if ((resume || state != null || prepare) && !scenario.equals("workflow")) {
             throw new IllegalArgumentException("Recovery options apply only to --scenario=workflow");
         }
-        if (resume && (state == null || amounts != null || options.containsOption("approve-demo-refund"))) {
+        if (resume && (state == null || amounts != null || prepare)) {
             throw new IllegalArgumentException("Use --resume --state=PATH without amount or approval overrides");
         }
-        return new Invocation(amount, options.containsOption("approve-demo-refund"), scenario, options.containsOption("help"), state, resume);
+        return new Invocation(amount, false, scenario, options.containsOption("help"), state, resume, prepare);
     }
 }

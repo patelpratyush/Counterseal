@@ -10,7 +10,7 @@ public class WorkflowApplication {
         try {
             var invocation = Invocation.parse(args);
             if (invocation.help()) {
-                System.out.println("Usage: java -jar handoffguard-workflow.jar [--amount=100] [--approve-demo-refund] [--state=PATH] [--scenario=workflow|gateway|server]");
+                System.out.println("Usage: java -jar handoffguard-workflow.jar [--amount=100] [--prepare-approval] [--state=PATH] [--scenario=workflow|gateway|server]");
                 System.out.println("Resume: java -jar handoffguard-workflow.jar --resume --state=PATH (uses saved amount and approval choice)");
                 return;
             }
@@ -18,7 +18,8 @@ public class WorkflowApplication {
             try (var context = new SpringApplicationBuilder(WorkflowApplication.class).logStartupInfo(false).run(args)) {
                 if (scenario.equals("workflow")) {
                     try (var workflow = context.getBean(WorkflowFactory.class).create(invocation)) {
-                        System.out.println(JSON.writerWithDefaultPrettyPrinter().writeValueAsString(workflow.run()));
+                        System.out.println(JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
+                                invocation.prepareApproval() ? workflow.prepareApproval() : workflow.run()));
                     }
                 } else {
                     var env = context.getEnvironment();
