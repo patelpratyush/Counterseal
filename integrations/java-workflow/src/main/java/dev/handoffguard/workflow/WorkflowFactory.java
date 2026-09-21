@@ -1,6 +1,8 @@
 package dev.handoffguard.workflow;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.UUID;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.core.env.Environment;
@@ -16,6 +18,16 @@ public final class WorkflowFactory implements AutoCloseable {
         var workflow = new Workflow(required("HANDOFFGUARD_BINARY"), required("HANDOFFGUARD_SERVER_URL"),
                 required("HANDOFFGUARD_API_TOKEN"), amount, approve);
         workflows.add(workflow);
+        return workflow;
+    }
+    public Workflow create(Invocation invocation) throws IOException {
+        Path state = invocation.state() == null
+                ? Path.of(environment.getProperty("HANDOFFGUARD_WORKFLOW_STATE_DIR", ".workflow-state"), UUID.randomUUID().toString())
+                : Path.of(invocation.state());
+        var workflow = new Workflow(required("HANDOFFGUARD_BINARY"), required("HANDOFFGUARD_SERVER_URL"),
+                required("HANDOFFGUARD_API_TOKEN"), invocation.amount(), invocation.approve(), state, invocation.resume());
+        workflows.add(workflow);
+        System.err.println("Workflow checkpoint: " + state.toAbsolutePath().normalize());
         return workflow;
     }
     private String required(String name) {

@@ -25,8 +25,10 @@ RUN mvn -B -q package
 
 FROM eclipse-temurin:21-jre-jammy AS demo
 WORKDIR /app
+RUN mkdir -p /data/workflows && chown -R 10001:10001 /data/workflows
 COPY --from=go-build /out/handoffguard /usr/local/bin/handoffguard
 COPY --from=java-build /src/target/handoffguard-workflow.jar /app/workflow.jar
 ENV HANDOFFGUARD_BINARY=/usr/local/bin/handoffguard
+ENV HANDOFFGUARD_WORKFLOW_STATE_DIR=/data/workflows
 USER 10001:10001
 ENTRYPOINT ["java", "-jar", "/app/workflow.jar"]

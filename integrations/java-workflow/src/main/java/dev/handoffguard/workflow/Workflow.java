@@ -21,34 +21,61 @@ public class Workflow implements AutoCloseable {
     private final boolean approve;
     private final ControlApi api;
     private final Path directory;
+    private final WorkflowStore store;
     private final Map<Stage, JsonNode> envelopes = new EnumMap<>(Stage.class);
     private final Map<Stage, JsonNode> receipts = new EnumMap<>(Stage.class);
     private final Map<Stage, GatewaySession> gateways = new EnumMap<>(Stage.class);
     private final EnumSet<Stage> attempted = EnumSet.noneOf(Stage.class);
     private final List<Event> events = new ArrayList<>();
     private String runId;
-    private boolean started, closed, failed;
+    private String pending = "";
+    private boolean started, closed, failed, approvalGranted;
 
     public record Event(String type, String runId, Stage stage) {}
     public record Result(String runId, Map<Stage, JsonNode> receipts, JsonNode audit, List<Event> events) {}
 
     public Workflow(String binary, String baseUrl, String token, int amount, boolean approve) throws IOException {
+        this(binary, baseUrl, token, amount, approve, null, false);
+    }
+
+    public Workflow(String binary, String baseUrl, String token, int amount, boolean approve,
+                    Path stateDirectory, boolean resume) throws IOException {
         if (amount <= 0) throw new IllegalArgumentException("Amount must be a positive integer");
+        if (resume && stateDirectory == null) throw new IllegalArgumentException("Resume requires a state directory");
         this.binary = Path.of(binary).toAbsolutePath().toString();
-        this.baseUrl = baseUrl; this.token = token; this.amount = amount; this.approve = approve;
+        this.baseUrl = java.net.URI.create(baseUrl).resolve("/").toString(); this.token = token;
         this.api = new ControlApi(baseUrl, token);
-        try { this.directory = Files.createTempDirectory("hg-java-"); }
-        catch (IOException error) { api.close(); throw error; }
+        WorkflowStore opened = null;
+        try {
+            opened = stateDirectory == null ? null : new WorkflowStore(stateDirectory);
+            if (opened != null && !resume && opened.exists()) {
+                throw new IllegalStateException("Checkpoint already exists; use --resume --state=PATH");
+            }
+            var saved = resume ? opened.read() : null;
+            if (resume && saved == null) throw new IllegalStateException("Empty checkpoint; refusing to create a new run");
+            this.amount = saved == null ? amount : saved.amount();
+            this.approve = saved == null ? approve : saved.approve();
+            if (saved != null) restore(saved);
+            this.store = opened;
+            checkpoint();
+            this.directory = Files.createTempDirectory("hg-java-");
+        } catch (IOException | RuntimeException error) {
+            if (opened != null) {
+                try { opened.close(); } catch (IOException closeError) { error.addSuppressed(closeError); }
+            }
+            api.close();
+            throw error;
+        }
     }
 
     public synchronized Result run() {
         try {
             start();
-            execute(Stage.SUPPORT, arguments(Stage.SUPPORT));
-            transition(Stage.SUPPORT, Stage.BILLING);
-            execute(Stage.BILLING, arguments(Stage.BILLING));
-            transition(Stage.BILLING, Stage.NOTIFICATION);
-            execute(Stage.NOTIFICATION, arguments(Stage.NOTIFICATION));
+            for (var stage : Stage.values()) {
+                if (receipts.containsKey(stage)) continue;
+                if (!envelopes.containsKey(stage)) transition(Stage.values()[stage.ordinal() - 1], stage);
+                execute(stage, arguments(stage));
+            }
             var audit = api.post("/v1/audit/" + runId + "/verify", null, 200);
             if (!"VALID".equals(audit.path("status").asText())) throw new IllegalStateException("Audit verification failed");
             return new Result(runId, receipts(), audit, List.copyOf(events));
@@ -59,11 +86,26 @@ public class Workflow implements AutoCloseable {
         ensureOpen();
         if (started) throw new IllegalStateException("Create a new Workflow for each run");
         started = true;
+        if (runId != null) {
+            // Confirm the original server still has these exact signed envelopes before continuing.
+            var chain = api.get("/v1/runs/" + runId + "/chain");
+            for (var envelope : envelopes.values()) {
+                boolean found = false;
+                for (var stored : chain.path("envelopes")) {
+                    if (stored.path("envelope").equals(envelope)) { found = true; break; }
+                }
+                if (!found) throw new IllegalStateException("Checkpoint does not match the stored run");
+            }
+            events.add(new Event("resumed", runId, null));
+            checkpoint();
+            return;
+        }
+        begin("CREATE_RUN");
         var root = api.post("/v1/envelopes", JSON.createObjectNode().set("envelope", rootEnvelope()), 201);
         runId = root.path("run_id").asText();
         envelopes.put(Stage.SUPPORT, root.path("envelope"));
-        connect(Stage.SUPPORT);
         events.add(new Event("started", runId, Stage.SUPPORT));
+        complete();
     }
 
     static ObjectNode rootEnvelope() {
@@ -109,32 +151,44 @@ public class Workflow implements AutoCloseable {
         if (stage.ordinal() != parentStage.ordinal() + 1 || !receipts.containsKey(parentStage) || envelopes.containsKey(stage)) {
             throw new IllegalStateException("Handoff requires a completed preceding stage and a fresh child");
         }
+        begin("DELEGATE_" + stage);
         var result = api.post("/v1/envelopes/" + envelopes.get(parentStage).path("id").asText() + "/delegate",
                 JSON.createObjectNode().set("child", child(parentStage, stage)), 201);
         envelopes.put(stage, result.path("envelope"));
-        if (stage == Stage.BILLING && approve) {
-            api.post("/v1/approvals", JSON.valueToTree(Map.of("envelope_id", result.path("envelope").path("id").asText(),
-                    "action", "refunds.create", "resource", "orders:48319", "arguments", arguments(stage),
-                    "approved_by", "demo-operator", "role", "refund_manager", "expires_at", Instant.now().plusSeconds(600).toString())), 201);
-        }
-        connect(stage);
         events.add(new Event("handoff", runId, stage));
+        complete();
     }
 
     public synchronized JsonNode execute(Stage stage, Map<String, Object> arguments) {
         ensureOpen();
-        if (!gateways.containsKey(stage)) throw new IllegalStateException("Stage has not been delegated");
+        if (!envelopes.containsKey(stage)) throw new IllegalStateException("Stage has not been delegated");
         if (!arguments(stage).equals(arguments)) throw new IllegalArgumentException("Tool arguments differ from the authorized request");
-        if (!attempted.add(stage)) throw new IllegalStateException("This workflow stage has already been attempted");
+        if (attempted.contains(stage)) throw new IllegalStateException("This workflow stage has already been attempted");
         try {
-            var result = gateways.get(stage).call(stage.tool, arguments);
+            if (!gateways.containsKey(stage)) connect(stage);
+            if (stage == Stage.BILLING && approve && !approvalGranted) {
+                begin("APPROVE_BILLING");
+                api.post("/v1/approvals", JSON.valueToTree(Map.of("envelope_id", envelopes.get(stage).path("id").asText(),
+                        "action", "refunds.create", "resource", "orders:48319", "arguments", arguments,
+                        "approved_by", "demo-operator", "role", "refund_manager", "expires_at", Instant.now().plusSeconds(600).toString())), 201);
+                approvalGranted = true;
+                complete();
+            }
+            attempted.add(stage);
+            begin("EXECUTE_" + stage);
+            var result = callTool(stage, arguments);
             if (Boolean.TRUE.equals(result.isError())) throw new IllegalStateException("Counterseal denied the tool call or upstream execution failed");
             JsonNode receipt = JSON.valueToTree(result.structuredContent());
             validateReceipt(stage, receipt, arguments);
             receipts.put(stage, receipt);
             events.add(new Event("tool_completed", runId, stage));
+            complete();
             return receipt.deepCopy();
         } catch (RuntimeException error) { failed = true; throw error; }
+    }
+
+    protected io.modelcontextprotocol.spec.McpSchema.CallToolResult callTool(Stage stage, Map<String, Object> arguments) {
+        return gateways.get(stage).call(stage.tool, arguments);
     }
 
     static void validateReceipt(Stage stage, JsonNode receipt, Map<String, Object> arguments) {
@@ -176,7 +230,51 @@ public class Workflow implements AutoCloseable {
         return Map.copyOf(result);
     }
     private void ensureOpen() {
-        if (closed || failed || Thread.currentThread().isInterrupted()) throw new IllegalStateException("Workflow is closed, failed, or interrupted");
+        if (closed || failed || !pending.isEmpty() || Thread.currentThread().isInterrupted()) throw new IllegalStateException("Workflow is closed, failed, interrupted, or needs reconciliation");
+    }
+
+    private void begin(String operation) { pending = operation; checkpoint(); }
+    private void complete() { pending = ""; checkpoint(); }
+    private void checkpoint() {
+        if (store == null) return;
+        try {
+            store.save(new WorkflowStore.Snapshot(1, baseUrl, amount, approve, runId, envelopes, receipts,
+                    attempted, events, approvalGranted, pending));
+        } catch (RuntimeException error) { failed = true; throw error; }
+    }
+
+    private void restore(WorkflowStore.Snapshot saved) {
+        if (saved == null || saved.version() != 1 || !baseUrl.equals(saved.baseUrl()) || saved.amount() <= 0
+                || saved.envelopes() == null || saved.receipts() == null || saved.attempted() == null
+                || saved.events() == null || saved.pending() == null) {
+            throw new IllegalStateException("Invalid checkpoint or different control API origin");
+        }
+        if (!saved.pending().isEmpty()) {
+            throw new IllegalStateException("RECONCILIATION_REQUIRED: " + saved.pending()
+                    + "; the outcome may be unknown. Do not retry or delete this checkpoint. Run: " + saved.runId());
+        }
+        runId = saved.runId();
+        envelopes.putAll(saved.envelopes());
+        receipts.putAll(saved.receipts());
+        attempted.addAll(saved.attempted());
+        events.addAll(saved.events());
+        approvalGranted = saved.approvalGranted();
+        if ((runId == null) != envelopes.isEmpty() || (runId != null && !runId.matches("run_[a-zA-Z0-9_-]+"))
+                || !attempted.equals(receipts.keySet()) || !envelopes.keySet().containsAll(receipts.keySet())
+                || (approvalGranted && (!approve || !envelopes.containsKey(Stage.BILLING)))) {
+            throw new IllegalStateException("Inconsistent checkpoint; refusing to replay operations");
+        }
+        for (var stage : Stage.values()) {
+            if (envelopes.containsKey(stage)) {
+                var envelope = envelopes.get(stage);
+                if (envelope == null || !envelope.path("id").asText().matches("env_[a-zA-Z0-9_-]+")
+                        || !stage.agent.equals(envelope.path("recipient").path("agent").asText())
+                        || (stage.ordinal() > 0 && !receipts.containsKey(Stage.values()[stage.ordinal() - 1]))) {
+                    throw new IllegalStateException("Invalid stage ordering in checkpoint");
+                }
+            }
+            if (receipts.containsKey(stage)) validateReceipt(stage, receipts.get(stage), arguments(stage));
+        }
     }
     @Override public synchronized void close() {
         if (closed) return;
@@ -199,6 +297,13 @@ public class Workflow implements AutoCloseable {
         } catch (IOException error) {
             if (failure == null) failure = new IllegalStateException("Temporary gateway cleanup failed", error);
             else failure.addSuppressed(error);
+        }
+        if (store != null) {
+            try { store.close(); }
+            catch (IOException error) {
+                if (failure == null) failure = new IllegalStateException("Workflow lock cleanup failed", error);
+                else failure.addSuppressed(error);
+            }
         }
         if (failure != null) throw failure;
     }

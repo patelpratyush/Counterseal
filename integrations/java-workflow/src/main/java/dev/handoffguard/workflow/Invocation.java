@@ -3,16 +3,16 @@ package dev.handoffguard.workflow;
 import java.util.Set;
 import org.springframework.boot.DefaultApplicationArguments;
 
-record Invocation(int amount, boolean approve, String scenario, boolean help) {
+record Invocation(int amount, boolean approve, String scenario, boolean help, String state, boolean resume) {
     static Invocation parse(String... args) {
         var options = new DefaultApplicationArguments(args);
         for (String name : options.getOptionNames()) {
-            if (!Set.of("amount", "approve-demo-refund", "help", "scenario").contains(name)) {
+            if (!Set.of("amount", "approve-demo-refund", "help", "scenario", "state", "resume").contains(name)) {
                 throw new IllegalArgumentException("Unknown option: " + name);
             }
         }
         if (!options.getNonOptionArgs().isEmpty()) throw new IllegalArgumentException("Use --name=value options");
-        for (String flag : Set.of("approve-demo-refund", "help")) {
+        for (String flag : Set.of("approve-demo-refund", "help", "resume")) {
             if (options.containsOption(flag) && !options.getOptionValues(flag).isEmpty()) {
                 throw new IllegalArgumentException("--" + flag + " does not take a value");
             }
@@ -25,6 +25,18 @@ record Invocation(int amount, boolean approve, String scenario, boolean help) {
         if (scenarios != null && scenarios.size() != 1) throw new IllegalArgumentException("Use --scenario=workflow|gateway|server");
         String scenario = scenarios == null ? "workflow" : scenarios.getFirst();
         if (!Set.of("workflow", "gateway", "server").contains(scenario)) throw new IllegalArgumentException("Unknown scenario");
-        return new Invocation(amount, options.containsOption("approve-demo-refund"), scenario, options.containsOption("help"));
+        var states = options.getOptionValues("state");
+        if (states != null && (states.size() != 1 || states.getFirst().isBlank())) {
+            throw new IllegalArgumentException("Use --state=PATH");
+        }
+        String state = states == null ? null : states.getFirst();
+        boolean resume = options.containsOption("resume");
+        if ((resume || state != null) && !scenario.equals("workflow")) {
+            throw new IllegalArgumentException("Recovery options apply only to --scenario=workflow");
+        }
+        if (resume && (state == null || amounts != null || options.containsOption("approve-demo-refund"))) {
+            throw new IllegalArgumentException("Use --resume --state=PATH without amount or approval overrides");
+        }
+        return new Invocation(amount, options.containsOption("approve-demo-refund"), scenario, options.containsOption("help"), state, resume);
     }
 }

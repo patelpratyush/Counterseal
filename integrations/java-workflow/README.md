@@ -36,6 +36,21 @@ operator; it is never exposed as an agent tool. Refunds and notifications are si
 All runs are deterministic, with no LLM, API key, or billable request. The former
 Python integration's optional live-model mode is not implemented in Java.
 
+## Durable recovery
+
+The workflow CLI saves checkpoints under `.workflow-state/<UUID>` by default and
+prints the path. Choose a stable path to make recovery explicit:
+
+```sh
+java -jar integrations/java-workflow/target/handoffguard-workflow.jar --state=.workflow-state/refund-demo
+java -jar integrations/java-workflow/target/handoffguard-workflow.jar --resume --state=.workflow-state/refund-demo
+```
+
+Resume uses the saved amount and approval choice. Completed stages are skipped;
+Notification reuses the saved refund ID. If an external operation was started but
+its result was not saved, recovery stops with `RECONCILIATION_REQUIRED` instead of
+retrying it. See [recovery behavior, crash tests, and limitations](../../docs/workflow-recovery.md).
+
 ## Design
 
 - `WorkflowApplication` is a Spring Boot command-line application, not another HTTP server.
@@ -49,7 +64,8 @@ Python integration's optional live-model mode is not implemented in Java.
 - `GatewaySession` uses the official MCP SDK's stdio transport. Each stage exposes
   exactly its one mapped tool. The Go gateway makes the actual authorization decision.
 - Tool arguments are fixed by the workflow. Each stage is attempted at most once;
-  errors and uncertain outcomes stop progress. Receipts must match the order, amount,
+  errors and uncertain outcomes stop progress. Durable runs retain this restriction
+  across process restarts. Receipts must match the order, amount,
   and actual refund ID before the next handoff can begin.
 - Output includes the run ID, receipts, verified audit result, and local correlation
   events containing only run/stage identifiers. There is no external trace exporter.
@@ -57,8 +73,12 @@ Python integration's optional live-model mode is not implemented in Java.
 This is a trusted orchestration process, not a sandbox or independently authenticated
 agent identity. The control token can create approvals. Public deployments need an
 actual operator identity system. Audit decisions are durable in PostgreSQL; workflow
-receipts and stage state are local. There is no durable retry, crash recovery, or
-compensation protocol. Do not automatically retry a refund after an uncertain outcome.
+receipts and stage state are checkpointed on a local POSIX filesystem. This supports
+single-host recovery, not distributed execution or automatic reconciliation of
+uncertain outcomes. Keep checkpoints intact; do not retry an uncertain refund by
+starting a new workflow. No compensation protocol or provider idempotency is supplied.
+The original five-argument Java constructor remains an ephemeral library/test mode;
+the CLI always uses the durable constructor.
 
 ## Tests and demos
 
@@ -75,6 +95,9 @@ The shell harness builds the Go CLI, starts a temporary database and API, runs
 missing and explicit approval, expanded-authority denial, early handoffs, changed
 arguments, repeated execution, interruption cleanup, hidden tools, approval replay,
 and revocation. The gateway demo verifies that a denied refund never reached upstream.
+Recovery tests additionally halt separate JVMs around the refund receipt commit and
+verify that safe resume sends only the remaining tool call while uncertain resume
+does not send a duplicate refund.
 
 Additional demonstrations against a running API:
 
@@ -93,8 +116,9 @@ bash scripts/test-postgres.sh bash scripts/smoke-gateway.sh
 ## Resume wording
 
 > Built a Java 21/Spring Boot workflow orchestrator using MCP, signed authority
-> delegation, approval enforcement, and PostgreSQL audit verification; validated
-> success and denial paths with JUnit integration tests and GitHub Actions CI.
+> delegation, approval enforcement, PostgreSQL audit verification, and durable local
+> checkpoints; verified recovery and prevention of refund replay across process crashes
+> with JUnit integration tests and GitHub Actions CI.
 
 ## Docker
 

@@ -25,9 +25,10 @@ flowchart TD
 The Java process is a trusted orchestrator. Each gateway fixes its agent identity
 and envelope, maps tool arguments to resources, and asks the control API for an
 authorization decision. The dashboard keeps its control token on the server.
-The API persists audit decisions; workflow receipts and stage state remain local
-to the Java process. The system does not yet provide independent operator identities
-or durable workflow recovery.
+The API persists audit decisions; Java saves workflow receipts and stages in durable
+local checkpoints. [Crash recovery](workflow-recovery.md) skips completed tool calls
+and stops uncertain outcomes for reconciliation. The system does not yet provide
+independent operator identities or distributed workflow recovery.
 
 ## Screenshots and recording
 
@@ -75,7 +76,7 @@ payment system or as preventing every form of prompt injection.
 ## Evidence and resume wording
 
 - [Hosted CI](https://github.com/patelpratyush/Counterseal/actions/runs/35475480843): backend, Java/gateway, dashboard, policy Action, Docker, and aggregate gate passed.
-- Six Java unit tests and nine integration tests cover success and denial paths.
+- Java unit and integration tests cover success, denial, checkpoint integrity, and abrupt process-crash recovery.
 - [Policy benchmark](benchmarks.md): median 0.150 ms per in-process comparison on the documented laptop and fixture.
 - Protected `main` requires a passing CI gate and a pull request.
 

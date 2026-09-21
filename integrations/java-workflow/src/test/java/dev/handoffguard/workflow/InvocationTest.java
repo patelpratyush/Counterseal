@@ -16,4 +16,14 @@ class InvocationTest {
             assertThrows(IllegalArgumentException.class, () -> Invocation.parse(args));
         }
     }
+    @Test void recoveryRequiresExplicitStateAndCannotChangeTheSavedRequest() {
+        var invocation = Invocation.parse("--resume", "--state=/tmp/workflow");
+        assertTrue(invocation.resume());
+        assertEquals("/tmp/workflow", invocation.state());
+        for (String[] args : new String[][]{{"--resume"}, {"--state"}, {"--state="}, {"--resume=false"},
+                {"--state=a", "--state=b"}, {"--resume", "--state=a", "--amount=825"},
+                {"--resume", "--state=a", "--approve-demo-refund"}, {"--state=a", "--scenario=gateway"}}) {
+            assertThrows(IllegalArgumentException.class, () -> Invocation.parse(args));
+        }
+    }
 }
