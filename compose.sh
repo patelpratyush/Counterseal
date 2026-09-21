@@ -25,7 +25,7 @@ case "$command" in
     "${compose[@]}" up --build --detach --wait --wait-timeout 180
     port="$(sed -n 's/^HG_DASHBOARD_PORT=//p' "$env_file")"
     password="$(sed -n 's/^HG_DASHBOARD_PASSWORD=//p' "$env_file")"
-    printf '\nDashboard: http://localhost:%s\nPassword:  %s\n\nAdd a simulated Java workflow: ./compose.sh demo\nStop and preserve data: ./compose.sh down\n' "${port:-3100}" "$password"
+    printf '\nDashboard: http://localhost:%s\nUsername: operator\nInitial password: %s\n\nAdd a simulated Java workflow: ./compose.sh demo\nStop and preserve data: ./compose.sh down\n' "${port:-3100}" "$password"
     ;;
   demo) "${compose[@]}" run --build --rm demo "$@" ;;
   down) "${compose[@]}" down ;;

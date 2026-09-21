@@ -4,11 +4,13 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class InvocationTest {
-    @Test void approvalMustBeAnExplicitValuelessFlag() {
+    @Test void approvalComesFromAnOperatorAndPreparationIsExplicit() {
         assertFalse(Invocation.parse().approve());
-        assertTrue(Invocation.parse("--amount=825", "--approve-demo-refund").approve());
+        assertTrue(Invocation.parse("--amount=825", "--prepare-approval").prepareApproval());
+        assertThrows(IllegalArgumentException.class, () -> Invocation.parse("--approve-demo-refund"));
         assertThrows(IllegalArgumentException.class, () -> Invocation.parse("--approve-demo-refund=false"));
         assertThrows(IllegalArgumentException.class, () -> Invocation.parse("--approve-demo-refund=true"));
+        assertThrows(IllegalArgumentException.class, () -> Invocation.parse("--prepare-approval=false"));
     }
     @Test void rejectsInvalidAndAmbiguousRequests() {
         for (String[] args : new String[][]{{"--amount=0"}, {"--amount=-1"}, {"--amount=1.5"}, {"--amount"},

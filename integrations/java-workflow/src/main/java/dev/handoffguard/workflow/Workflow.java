@@ -82,6 +82,18 @@ public class Workflow implements AutoCloseable {
         } catch (RuntimeException error) { failed = true; throw error; }
     }
 
+    /** Stop before attempting Billing, so an operator can approve the exact refund in the console. */
+    public synchronized Map<String, Object> prepareApproval() {
+        try {
+            start();
+            execute(Stage.SUPPORT, arguments(Stage.SUPPORT));
+            transition(Stage.SUPPORT, Stage.BILLING);
+            return Map.of("status", "AWAITING_OPERATOR_APPROVAL", "run_id", runId,
+                    "envelope_id", envelopes.get(Stage.BILLING).path("id").asText(),
+                    "arguments", arguments(Stage.BILLING));
+        } catch (RuntimeException error) { failed = true; throw error; }
+    }
+
     synchronized void start() {
         ensureOpen();
         if (started) throw new IllegalStateException("Create a new Workflow for each run");

@@ -42,11 +42,10 @@ for solo development. These settings were verified through the GitHub API on 202
 The [portfolio guide](portfolio.md) includes screenshots, an architecture diagram,
 an automated browser recording, a narrated-demo script, and measured benchmarks.
 
-Before a public production deployment: add authenticated operator identity,
-appropriate access controls, distributed workflow recovery, operational monitoring,
-backups, and external audit checkpoints. The current API has a shared control
-token and serializes service transactions; the dashboard is a single-viewer
-console. These boundaries are described in the component guides.
+Before a public production deployment: add external identity/MFA, team isolation,
+distributed workflow recovery, operational monitoring, backups, and external audit
+checkpoints. The service API still uses a shared control token and serialized
+transactions; human approvals use individual local accounts and role checks.
 
 Optional feature work includes a live-model Java integration; the shipped workflow
 is deterministic. A polished voiceover video can be recorded using the portfolio script.
@@ -55,6 +54,10 @@ Update 2026-09-21: the Java CLI now supports [durable local workflow recovery](w
 with atomic checkpoints, an exclusive process lock, saved receipts, and refusal to
 replay uncertain operations. It does not yet support automatic upstream reconciliation
 or distributed execution.
+
+Update 2026-09-21: [operator accounts and approval UI](operator-accounts.md) replace
+the shared viewer password and public Java self-approval flag. The console uses
+revocable operator sessions; manager identity is recorded in each refund approval.
 
 Start the local container demo with `./compose.sh up` and `./compose.sh demo`.
 See [Docker setup](docker.md) and [Java integration](../integrations/java-workflow/README.md).

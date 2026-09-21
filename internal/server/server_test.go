@@ -75,6 +75,7 @@ func setup(t *testing.T) *fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
+	api.AllowDemoApprovals = true // Existing policy fixtures deliberately exercise trusted demo assertions.
 	httpServer := httptest.NewServer(api.Handler())
 	t.Cleanup(httpServer.Close)
 	return &fixture{db, httpServer, key}

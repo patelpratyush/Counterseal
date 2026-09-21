@@ -36,3 +36,19 @@ CREATE TABLE IF NOT EXISTS audit_events (
 );
 CREATE INDEX IF NOT EXISTS audit_run_seq ON audit_events(run_id,seq);
 INSERT INTO schema_migrations(version) VALUES(1) ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS operators (
+ id text PRIMARY KEY, username text UNIQUE NOT NULL, display_name text NOT NULL,
+ role text NOT NULL CHECK(role IN ('viewer','refund_manager')), password_hash text NOT NULL,
+ disabled boolean NOT NULL DEFAULT false, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS operator_sessions (
+ token_hash text PRIMARY KEY, operator_id text NOT NULL REFERENCES operators(id),
+ expires_at timestamptz NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS operator_sessions_owner ON operator_sessions(operator_id);
+CREATE TABLE IF NOT EXISTS login_limits (
+ bucket text PRIMARY KEY, attempts integer NOT NULL, reset_at timestamptz NOT NULL
+);
+ALTER TABLE approvals ADD COLUMN IF NOT EXISTS operator_id text REFERENCES operators(id);
+ALTER TABLE approvals ADD COLUMN IF NOT EXISTS refund_amount bigint;
+INSERT INTO schema_migrations(version) VALUES(2) ON CONFLICT DO NOTHING;

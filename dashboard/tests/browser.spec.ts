@@ -55,16 +55,17 @@ async function settle(page: Page) {
   await page.evaluate(() => document.fonts.ready);
 }
 
-test("real API: authentication, search, delegation, audit, theme, mobile, logout", async ({ page, request }) => {
+test("real API: operator authentication, approvals, search, delegation, audit, theme, mobile, logout", async ({ page, request, browser }) => {
   const run = await seed(request);
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto(`/runs/${run}`);
   await expect(page).toHaveURL(/\/login$/);
-  await page.getByLabel("Viewer password").fill("wrong-password");
+  await page.getByLabel("Username", { exact: true }).fill("morgan");
+  await page.getByLabel("Password", { exact: true }).fill("wrong-password");
   await page.getByRole("button", { name: "Open console" }).click();
-  await expect(page.locator(".login-form [role=alert]")).toContainText("Incorrect viewer password");
-  await page.getByLabel("Viewer password").fill(process.env.HANDOFFGUARD_DASHBOARD_PASSWORD!);
+  await expect(page.locator(".login-form [role=alert]")).toContainText("Invalid username or password");
+  await page.getByLabel("Password", { exact: true }).fill(process.env.HANDOFFGUARD_OPERATOR_PASSWORD!);
   await page.getByRole("button", { name: "Open console" }).click();
   await expect(page.getByRole("heading", { name: "Runs", exact: true })).toBeVisible();
   await settle(page);
@@ -92,6 +93,20 @@ test("real API: authentication, search, delegation, audit, theme, mobile, logout
     page.getByRole("tabpanel", { name: /Decision history/ })
       .getByRole("heading", { name: "Delegation denied", exact: true }),
   ).toBeVisible();
+  const form = page.getByRole("form", { name: "Approve refund" });
+  await form.getByLabel("Refund amount").fill("825");
+  await form.getByLabel("I confirm this exact order and amount.").check();
+  await form.getByRole("button", { name: "Approve exact refund" }).click();
+  await expect(form.getByRole("status")).toContainText("Approved by Morgan Chen");
+  await expect(page.locator(".approval-history")).toContainText("Morgan Chen");
+  await expect(page.locator(".approval-history")).toContainText("825 units");
+  await page.locator(".approval-ledger").screenshot({ path: "/tmp/counterseal-approvals.png" });
+  await form.getByLabel("Refund amount").fill("825");
+  await form.getByLabel("I confirm this exact order and amount.").check();
+  await form.getByRole("button", { name: "Approve exact refund" }).click();
+  await expect(form.getByRole("alert")).toContainText("already has an approval");
+  await page.reload();
+  await expect(page.locator(".approval-history")).toContainText("825 units");
   await page.getByRole("button", { name: "Toggle color theme" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.getByRole("tab", { name: "Delegation graph" }).click();
@@ -106,8 +121,24 @@ test("real API: authentication, search, delegation, audit, theme, mobile, logout
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(canvas.x + canvas.width + 1);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
+  const oldCookies = await page.context().cookies();
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login$/);
+  const copied = await browser.newContext();
+  await copied.addCookies(oldCookies);
+  const replay = await copied.newPage();
+  await replay.goto(new URL(`/runs/${run}`, page.url()).toString());
+  await expect(replay).toHaveURL(/\/login$/);
+  await copied.close();
+  await page.getByLabel("Username", { exact: true }).fill("reader");
+  await page.getByLabel("Password", { exact: true }).fill(process.env.HANDOFFGUARD_VIEWER_PASSWORD!);
+  await page.getByRole("button", { name: "Open console" }).click();
+  await expect(page.getByRole("heading", { name: "Runs", exact: true })).toBeVisible();
+  await page.goto(`/runs/${run}`);
+  await expect(page.getByRole("heading", { name: "View decisions, without approving" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Approve exact refund" })).toHaveCount(0);
+  await expect(page.locator(".approval-history")).toContainText("Morgan Chen");
+  await page.getByRole("button", { name: "Sign out" }).click();
   await page.goto(`/runs/${run}`);
   await expect(page).toHaveURL(/\/login$/);
   expect(errors).toEqual([]);

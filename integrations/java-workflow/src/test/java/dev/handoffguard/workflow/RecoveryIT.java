@@ -96,6 +96,37 @@ class RecoveryIT {
         }
     }
 
+    @Test void operatorApprovesPreparedRefundBeforeTheWorkflowResumes() throws Exception {
+        String run, envelope;
+        try (var workflow = new Workflow(env("HANDOFFGUARD_BINARY"), env("HANDOFFGUARD_SERVER_URL"),
+                env("HANDOFFGUARD_API_TOKEN"), 825, false, directory, false)) {
+            var prepared = workflow.prepareApproval();
+            assertEquals("AWAITING_OPERATOR_APPROVAL", prepared.get("status"));
+            run = (String) prepared.get("run_id");
+            envelope = (String) prepared.get("envelope_id");
+            assertFalse(workflow.receipts().containsKey(Stage.BILLING));
+        }
+        try (var api = api()) {
+            assertEquals(1, api.get("/v1/runs/" + run + "/chain").path("actions").size());
+            var login = api.post("/v1/operators/login", JSON.valueToTree(java.util.Map.of(
+                    "username", "morgan", "password", env("HANDOFFGUARD_OPERATOR_PASSWORD"))), 200);
+            try (var operator = new ControlApi(env("HANDOFFGUARD_SERVER_URL"), login.path("token").asText())) {
+                var approved = operator.post("/v1/approvals", JSON.valueToTree(java.util.Map.of(
+                        "envelope_id", envelope, "action", "refunds.create", "resource", "orders:48319",
+                        "arguments", java.util.Map.of("order_id", "48319", "amount", 825),
+                        "expires_at", java.time.Instant.now().plusSeconds(600).toString())), 201);
+                assertEquals("morgan", approved.path("approved_by").asText());
+            }
+        }
+        try (var resumed = workflow(true); var api = api()) {
+            assertEquals(run, resumed.run().runId());
+            assertEquals(3, api.get("/v1/runs/" + run + "/chain").path("actions").size());
+            var history = api.get("/v1/runs/" + run + "/approvals").path("approvals");
+            assertEquals("morgan", history.get(0).path("username").asText());
+            assertFalse(history.get(0).path("consumed_at").isNull());
+        }
+    }
+
     private int cliResume() throws Exception {
         Path jar = Path.of(Workflow.class.getProtectionDomain().getCodeSource().getLocation().toURI())
                 .getParent().resolve("handoffguard-workflow.jar");

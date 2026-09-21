@@ -1,78 +1,36 @@
 import "server-only";
-import {
-  createHmac,
-  createHash,
-  timingSafeEqual,
-  randomBytes,
-} from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { request } from "./transport";
 
-const cookieName = "hg_viewer";
-const duration = 8 * 60 * 60;
-function config() {
-  const secret = process.env.HANDOFFGUARD_DASHBOARD_SECRET ?? "";
-  const password = process.env.HANDOFFGUARD_DASHBOARD_PASSWORD ?? "";
-  if (secret.length < 32 || password.length < 16)
-    throw new Error(
-      "Configure the dashboard password (16+ characters) and session secret (32+ characters).",
-    );
-  return { secret, password };
+const cookieName = "cs_operator";
+export type Operator = { id: string; username: string; display_name: string; role: "viewer" | "refund_manager" };
+
+export async function requireSession(): Promise<{ operator: Operator; token: string }> {
+  const token = (await cookies()).get(cookieName)?.value;
+  if (!token || !/^op_[A-Za-z0-9_-]{43}$/.test(token)) redirect("/login");
+  const response = await request("/v1/operators/me", "GET", token);
+  if (response.status === 401) redirect("/login");
+  if (!response.ok) throw new Error("Cannot verify your operator session. Please try again.");
+  return { operator: await response.json(), token };
 }
-function signature(payload: string) {
-  const { secret, password } = config();
-  return createHmac("sha256", secret)
-    .update(password)
-    .update("\0")
-    .update(payload)
-    .digest("base64url");
-}
-function equal(a: string, b: string) {
-  return timingSafeEqual(
-    createHash("sha256").update(a).digest(),
-    createHash("sha256").update(b).digest(),
-  );
-}
-export function passwordMatches(value: string) {
-  return equal(value, config().password);
-}
-export async function hasSession() {
-  const value = (await cookies()).get(cookieName)?.value;
-  if (!value || value.length > 512) return false;
-  const [payload, mac, extra] = value.split(".");
-  if (!payload || !mac || extra || !equal(signature(payload), mac))
-    return false;
-  try {
-    const { expires } = JSON.parse(
-      Buffer.from(payload, "base64url").toString(),
-    );
-    return (
-      typeof expires === "number" &&
-      expires > Date.now() &&
-      expires <= Date.now() + duration * 1000
-    );
-  } catch {
-    return false;
-  }
-}
-export async function requireSession() {
-  if (!(await hasSession())) redirect("/login");
-}
-export async function createSession() {
-  const payload = Buffer.from(
-    JSON.stringify({
-      expires: Date.now() + duration * 1000,
-      nonce: randomBytes(16).toString("hex"),
-    }),
-  ).toString("base64url");
-  (await cookies()).set(cookieName, payload + "." + signature(payload), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    maxAge: duration,
+export async function loginOperator(username: string, password: string): Promise<string | null> {
+  const response = await request("/v1/operators/login", "POST", undefined, { username, password });
+  if (response.status === 429) return "Too many attempts. Please wait a minute.";
+  if (response.status === 401) return "Invalid username or password.";
+  if (!response.ok) return "Sign-in is unavailable. Please try again.";
+  const session = await response.json() as { token: string };
+  (await cookies()).set(cookieName, session.token, {
+    httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/", maxAge: 8 * 60 * 60,
   });
+  return null;
 }
 export async function clearSession() {
+  const token = (await cookies()).get(cookieName)?.value;
+  if (token) {
+    const response = await request("/v1/operators/logout", "POST", token);
+    if (!response.ok && response.status !== 401) throw new Error("Sign-out failed. Please try again.");
+  }
   (await cookies()).delete(cookieName);
+  (await cookies()).delete("hg_viewer");
 }

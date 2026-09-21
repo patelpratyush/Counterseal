@@ -2,6 +2,9 @@
 set -eu
 umask 077
 if [ "$1" = server ]; then
+  if [ -n "${HANDOFFGUARD_OPERATOR_PASSWORD:-}" ]; then
+    handoffguard operator create --username operator --name 'Local Operator' --role refund_manager --if-absent
+  fi
   if [ ! -e /data/server.priv ] && [ ! -e /data/server.pub ]; then
     handoffguard keygen --out /data/server
   fi

@@ -8,7 +8,8 @@ test("container dashboard displays and verifies a Java workflow", async ({ page 
   page.on("pageerror", error => errors.push(error.message));
   await page.goto(`/runs/${run}`);
   await expect(page).toHaveURL(/\/login$/);
-  await page.getByLabel("Viewer password").fill(password);
+  await page.getByLabel("Username", { exact: true }).fill("operator");
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Open console" }).click();
   await expect(page.getByRole("heading", { name: "Runs", exact: true })).toBeVisible();
   await page.goto(`/runs/${run}`);
@@ -18,6 +19,16 @@ test("container dashboard displays and verifies a Java workflow", async ({ page 
   await page.getByRole("button", { name: "Verify audit", exact: true }).click();
   await expect(page.getByText("Audit valid", { exact: true })).toBeVisible();
   await page.screenshot({ path: "/tmp/handoffguard-compose.png", fullPage: true });
+  const approvalRun = process.env.HG_COMPOSE_APPROVAL_RUN_ID;
+  if (!approvalRun) throw new Error("Missing prepared approval run");
+  await page.goto(`/runs/${approvalRun}`);
+  const form = page.getByRole("form", { name: "Approve refund" });
+  await form.getByLabel("Refund amount").fill("825");
+  await form.getByLabel("I confirm this exact order and amount.").check();
+  await form.getByRole("button", { name: "Approve exact refund" }).click();
+  await expect(form.getByRole("status")).toContainText("Approved by Local Operator");
+  await expect(page.locator(".approval-history")).toContainText("825 units");
+  await expect(page.locator(".approval-history")).toContainText("Verified operator");
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login$/);
   expect(errors).toEqual([]);

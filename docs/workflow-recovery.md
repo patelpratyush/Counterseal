@@ -12,19 +12,20 @@ Use the same API, credentials, and Go binary setup as the
 
 ```bash
 java -jar integrations/java-workflow/target/handoffguard-workflow.jar \
-  --state=.workflow-state/refund-demo --amount=825 --approve-demo-refund
+  --state=.workflow-state/refund-demo --amount=825 --prepare-approval
 ```
 
-Resume that exact workflow after a restart:
+Approve the prepared run in the console as a refund manager, then resume that exact workflow:
 
 ```bash
 java -jar integrations/java-workflow/target/handoffguard-workflow.jar \
   --resume --state=.workflow-state/refund-demo
 ```
 
-Resume loads the saved amount and approval choice; overrides are rejected.
-The approval choice is the demo operator's original intent, not a new approval
-on each restart. Already-created approvals are never automatically replaced.
+Resume loads the saved amount; request overrides are rejected. The public CLI
+does not self-approve. Legacy checkpoints retain their original demo approval
+choice, but that path only works with the explicitly enabled test compatibility API.
+Already-created approvals are never automatically replaced.
 The API still enforces expiry, revocation, and approval consumption.
 
 Without `--state`, the CLI creates `.workflow-state/<UUID>` and prints the path
@@ -112,8 +113,7 @@ ambiguous outcomes. The shipped upstream is a simulation, not a payment service.
 ## Crash tests
 
 ```bash
-bash scripts/test-postgres.sh bash scripts/with-api.sh \
-  mvn -B -f integrations/java-workflow/pom.xml -Pintegration -Dit.test=RecoveryIT verify
+bash scripts/test-postgres.sh bash scripts/smoke-agents.sh
 ```
 
 Tests start a separate JVM against the real API, PostgreSQL, and MCP gateway.

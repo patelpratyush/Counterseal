@@ -36,8 +36,9 @@ if "${compose[@]}" run --rm demo --amount=825 > "$work/denied.log" 2>&1; then
   echo 'Unapproved refund unexpectedly succeeded' >&2; exit 1
 fi
 grep -q 'Counterseal denied the tool call' "$work/denied.log"
-"${compose[@]}" run --rm demo --amount=825 --approve-demo-refund > "$work/approved.json"
-jq -e '.audit.status=="VALID" and .receipts.BILLING.amount==825' "$work/approved.json" >/dev/null
+"${compose[@]}" run --rm demo --amount=825 --prepare-approval --state=/data/workflows/operator-approved > "$work/prepared.json"
+export HG_COMPOSE_APPROVAL_RUN_ID
+HG_COMPOSE_APPROVAL_RUN_ID="$(jq -er .run_id "$work/prepared.json")"
 # Recreate containers, preserving database, signing keys, and workflow checkpoints.
 "${compose[@]}" down
 "${compose[@]}" up --detach --wait --wait-timeout 180
@@ -48,4 +49,6 @@ jq -e --slurpfile original "$work/success.json" \
   '.runId==$original[0].runId and .receipts==$original[0].receipts and .audit.status=="VALID"' "$work/resumed.json" >/dev/null
 # Browser verifies that the original run and its audit survived recreation.
 (cd dashboard && npx playwright test --config playwright.compose.config.ts)
+"${compose[@]}" run --rm demo --resume --state=/data/workflows/operator-approved > "$work/approved.json"
+jq -e '.audit.status=="VALID" and .receipts.BILLING.amount==825' "$work/approved.json" >/dev/null
 echo 'PASS: Compose Java workflow, approval denial/allow, persistent keys/data/checkpoints, resumed receipts, dashboard login and audit'
