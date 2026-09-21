@@ -49,12 +49,15 @@ credentials. The file is private to its owner and excluded from Git and Docker
 build contexts. Keep it for subsequent starts. To change the host port, edit
 `HG_DASHBOARD_PORT` in that file and run `./compose.sh up` again.
 
-Two named volumes hold state:
+Three named volumes hold state:
 
 - `handoffguard_postgres-data`: PostgreSQL records.
 - `handoffguard_signing-keys`: the Ed25519 signing key pair.
+- `handoffguard_workflow-state`: Java workflow checkpoints and saved receipts.
 
-Back up both volumes and `.env.compose` together. The API generates its signing
+Back up all three volumes and `.env.compose` together. Never restore an older workflow
+checkpoint and blindly replay operations; reconcile it against the upstream first.
+The API generates its signing
 key only when both key files are absent; it refuses an incomplete pair. Container
 recreation preserves the key so previously stored envelopes remain verifiable.
 The PostgreSQL password in an existing volume is not changed by editing the env
@@ -91,7 +94,8 @@ node_modules, Maven targets, and preview state are excluded from build contexts.
 This configuration is a local portfolio/demo deployment. For a public deployment,
 add HTTPS termination and production identity/authorization, database backups,
 secret management, and operational monitoring. The dashboard's existing single-viewer
-model and the Java workflow's lack of durable recovery still apply. Keep using
+model still applies. Java supports [durable local recovery](workflow-recovery.md),
+but uncertain outcomes require reconciliation and distributed recovery is not supplied. Keep using
 `localhost` for this local browser URL; production session cookies require a secure
 browser context.
 

@@ -26,7 +26,7 @@ trap 'exit 143' TERM
 "${compose[@]}" --profile demo build
 "${compose[@]}" up --detach --wait --wait-timeout 180
 key_before="$("${compose[@]}" exec -T api sha256sum /data/server.pub)"
-"${compose[@]}" run --rm demo > "$work/success.json"
+"${compose[@]}" run --rm demo --state=/data/workflows/persistence-test > "$work/success.json"
 jq -e '.audit.status=="VALID" and (.receipts | length==3)' "$work/success.json" >/dev/null
 export HG_COMPOSE_RUN_ID HG_COMPOSE_PASSWORD HG_COMPOSE_URL
 HG_COMPOSE_RUN_ID="$(jq -r .runId "$work/success.json")"
@@ -38,11 +38,14 @@ fi
 grep -q 'Counterseal denied the tool call' "$work/denied.log"
 "${compose[@]}" run --rm demo --amount=825 --approve-demo-refund > "$work/approved.json"
 jq -e '.audit.status=="VALID" and .receipts.BILLING.amount==825' "$work/approved.json" >/dev/null
-# Recreate containers, preserving both database and signing-key volumes.
+# Recreate containers, preserving database, signing keys, and workflow checkpoints.
 "${compose[@]}" down
 "${compose[@]}" up --detach --wait --wait-timeout 180
 key_after="$("${compose[@]}" exec -T api sha256sum /data/server.pub)"
 [[ "$key_before" == "$key_after" ]] || { echo 'Signing key changed after recreation' >&2; exit 1; }
+"${compose[@]}" run --rm demo --resume --state=/data/workflows/persistence-test > "$work/resumed.json"
+jq -e --slurpfile original "$work/success.json" \
+  '.runId==$original[0].runId and .receipts==$original[0].receipts and .audit.status=="VALID"' "$work/resumed.json" >/dev/null
 # Browser verifies that the original run and its audit survived recreation.
 (cd dashboard && npx playwright test --config playwright.compose.config.ts)
-echo 'PASS: Compose Java workflow, approval denial/allow, persistent keys/data, dashboard login and audit'
+echo 'PASS: Compose Java workflow, approval denial/allow, persistent keys/data/checkpoints, resumed receipts, dashboard login and audit'

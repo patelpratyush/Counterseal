@@ -72,6 +72,8 @@ services:
     environment:
       HANDOFFGUARD_SERVER_URL: http://127.0.0.1:8080
       HANDOFFGUARD_API_TOKEN: ${HG_API_TOKEN:?Missing API token}
+    volumes:
+      - workflow-state:/data/workflows
     depends_on:
       api:
         condition: service_healthy
@@ -81,3 +83,4 @@ services:
 volumes:
   postgres-data:
   signing-keys:
+  workflow-state:

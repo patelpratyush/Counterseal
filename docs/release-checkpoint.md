@@ -43,13 +43,18 @@ The [portfolio guide](portfolio.md) includes screenshots, an architecture diagra
 an automated browser recording, a narrated-demo script, and measured benchmarks.
 
 Before a public production deployment: add authenticated operator identity,
-appropriate access controls, durable workflow recovery, operational monitoring,
+appropriate access controls, distributed workflow recovery, operational monitoring,
 backups, and external audit checkpoints. The current API has a shared control
 token and serializes service transactions; the dashboard is a single-viewer
 console. These boundaries are described in the component guides.
 
 Optional feature work includes a live-model Java integration; the shipped workflow
 is deterministic. A polished voiceover video can be recorded using the portfolio script.
+
+Update 2026-09-21: the Java CLI now supports [durable local workflow recovery](workflow-recovery.md)
+with atomic checkpoints, an exclusive process lock, saved receipts, and refusal to
+replay uncertain operations. It does not yet support automatic upstream reconciliation
+or distributed execution.
 
 Start the local container demo with `./compose.sh up` and `./compose.sh demo`.
 See [Docker setup](docker.md) and [Java integration](../integrations/java-workflow/README.md).

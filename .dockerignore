@@ -1,6 +1,7 @@
 .git
 .worktrees
 .local-preview
+.workflow-state
 **/node_modules
 **/.next
 **/.next-preview

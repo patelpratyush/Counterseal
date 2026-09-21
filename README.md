@@ -165,6 +165,10 @@ Support → Billing → Notification with signed delegation and a separate MCP
 gateway for each agent. The Java workflow is deterministic and requires no model
 service or API key. Refunds and notifications are simulated.
 
+The CLI persists workflow stages and receipts. [Durable recovery](docs/workflow-recovery.md)
+resumes completed stages without replaying their tool calls and stops uncertain
+operations for reconciliation. Checkpoints use a local filesystem or Docker volume.
+
 ```bash
 mvn -B -f integrations/java-workflow/pom.xml verify
 bash scripts/test-postgres.sh bash scripts/smoke-agents.sh
