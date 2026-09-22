@@ -17,6 +17,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"handoffguard/internal/strictjson"
+	"handoffguard/internal/telemetry"
 )
 
 type Upstream interface {
@@ -24,6 +25,7 @@ type Upstream interface {
 	CallTool(context.Context, *mcp.CallToolParams) (*mcp.CallToolResult, error)
 }
 type Options struct {
+	Trace               bool
 	AgentID, EnvelopeID string
 	Timeout             time.Duration
 	Logger              *slog.Logger
@@ -117,10 +119,23 @@ func New(ctx context.Context, upstream Upstream, authorizer Authorizer, config C
 
 func handler(upstream Upstream, authorizer Authorizer, name string, mapping Mapping, schema *jsonschema.Schema, options Options) mcp.ToolHandler {
 	return func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		parent, _ := req.Params.GetMeta()["traceparent"].(string)
+		ctx, span := telemetry.Start(ctx, parent)
+		outcome := "error"
+		defer func() {
+			if options.Trace {
+				span.End(options.Logger, "gateway", "tools/call", outcome)
+			}
+		}()
 		ctx, cancel := context.WithTimeout(ctx, options.Timeout)
 		defer cancel()
 		log := options.Logger.With("tool", name, "agent_id", options.AgentID, "envelope_id", options.EnvelopeID)
 		reject := func(code, message string) (*mcp.CallToolResult, error) {
+			if code == "AUTHORIZATION_DENIED" {
+				outcome = "deny"
+			} else if code == "INVALID_ARGUMENTS" || code == "RESOURCE_MAPPING_FAILED" || code == "UNSUPPORTED_CONTINUATION" {
+				outcome = "rejected"
+			}
 			log.Warn("gateway blocked call", "code", code)
 			return toolError(code + ": " + message), nil
 		}
@@ -185,6 +200,9 @@ func handler(upstream Upstream, authorizer Authorizer, name string, mapping Mapp
 		}
 		sum := sha256.Sum256(encoded)
 		log.Info("gateway tool completed", "is_error", result.IsError, "result_hash", hex.EncodeToString(sum[:]))
+		if !result.IsError {
+			outcome = "ok"
+		}
 		return result, nil
 	}
 }

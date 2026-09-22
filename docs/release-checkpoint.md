@@ -48,8 +48,9 @@ checkpoints. The service API still uses a shared control token and serialized
 transactions; human approvals use individual local accounts and role checks.
 
 The Java workflow has an optional [live-model proposal path](live-model.md); its
-default remains deterministic. Remaining demonstration work includes distributed
-tracing, operational metrics, concurrent API benchmarks, and a polished voiceover.
+default remains deterministic. [Operational visibility](observability.md) provides local structured traces and
+Prometheus metrics. Remaining work includes collector/alert deployment, concurrent
+API benchmarks, and a polished voiceover.
 
 Update 2026-09-21: the Java CLI now supports [durable local workflow recovery](workflow-recovery.md)
 with atomic checkpoints, an exclusive process lock, saved receipts, and refusal to

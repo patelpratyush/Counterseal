@@ -18,6 +18,8 @@ a PostgreSQL-backed control API with scoped approvals and audit records,
 an MCP tool gateway, a Java/Spring Boot workflow integration, and a Next.js dashboard.
 The optional [live-model demo](docs/live-model.md) lets OpenAI propose tool calls
 while Counterseal enforces scope and named operator approvals.
+[Operational visibility](docs/observability.md) adds correlated Java/gateway/API
+spans and authenticated authorization metrics.
 
 ## Build
 

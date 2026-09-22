@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"handoffguard/internal/policy"
+	"handoffguard/internal/telemetry"
 )
 
 type approvalRequest struct {
@@ -217,7 +218,7 @@ func (s *Server) action(ctx context.Context, tx pgx.Tx, r *http.Request) (any, i
 		return nil, 0, err
 	}
 	response := map[string]any{"action_id": id, "result": result, "consumed_approval_ids": approvalIDs}
-	if err = appendAudit(ctx, tx, v.RunID, "action.evaluated", map[string]any{"action_id": id, "envelope_id": req.EnvelopeID, "agent_id": req.AgentID, "tool": req.Tool, "arguments_hash": argumentsHash, "resources": resources, "data_classes": req.DataClasses, "result": result, "consumed_approval_ids": approvalIDs}); err != nil {
+	if err = appendAudit(ctx, tx, v.RunID, "action.evaluated", map[string]any{"trace_id": telemetry.Current(ctx).TraceID, "span_id": telemetry.Current(ctx).SpanID, "action_id": id, "envelope_id": req.EnvelopeID, "agent_id": req.AgentID, "tool": req.Tool, "arguments_hash": argumentsHash, "resources": resources, "data_classes": req.DataClasses, "result": result, "consumed_approval_ids": approvalIDs}); err != nil {
 		return nil, 0, err
 	}
 	if result.Decision == "DENY" {

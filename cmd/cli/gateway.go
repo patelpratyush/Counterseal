@@ -55,7 +55,7 @@ func newGatewayCmd() *cobra.Command {
 			}
 			defer session.Close()
 			logger := slog.New(slog.NewJSONHandler(cmd.ErrOrStderr(), nil))
-			proxy, err := gateway.New(ctx, session, authorizer, config, gateway.Options{AgentID: agent, EnvelopeID: envelopeID, Timeout: timeout, Logger: logger})
+			proxy, err := gateway.New(ctx, session, authorizer, config, gateway.Options{Trace: os.Getenv("COUNTERSEAL_TRACE") == "1", AgentID: agent, EnvelopeID: envelopeID, Timeout: timeout, Logger: logger})
 			if err != nil {
 				return err
 			}

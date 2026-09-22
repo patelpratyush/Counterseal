@@ -21,9 +21,12 @@ import (
 	"handoffguard/internal/envelope"
 	"handoffguard/internal/policy"
 	"handoffguard/internal/store"
+	"handoffguard/internal/telemetry"
 )
 
 type Server struct {
+	TraceLogger        *slog.Logger // Optional span sink; configure before serving.
+	metrics            metrics
 	AllowDemoApprovals bool // Explicit compatibility mode for isolated demonstrations/tests only.
 	db                 *store.Store
 	key                ed25519.PrivateKey
@@ -83,6 +86,7 @@ type endpoint func(context.Context, pgx.Tx, *http.Request) (any, int, error)
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /metrics", s.serveMetrics)
 	mux.HandleFunc("POST /v1/operators/login", s.wrapEndpoint(s.login, true))
 	mux.HandleFunc("GET /v1/operators/me", s.wrap(s.me))
 	mux.HandleFunc("POST /v1/operators/logout", s.wrap(s.logout))
@@ -116,6 +120,20 @@ func (s *Server) wrap(fn endpoint) http.HandlerFunc {
 }
 func (s *Server) wrapEndpoint(fn endpoint, public bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		started := time.Now()
+		traceCtx, span := telemetry.Start(r.Context(), r.Header.Get("traceparent"))
+		r = r.WithContext(traceCtx)
+		observed := &statusWriter{ResponseWriter: w, status: 200}
+		w = observed
+		w.Header().Set("traceparent", span.Header())
+		outcome := "rejected"
+		defer func() {
+			if observed.status >= 500 {
+				outcome = "error"
+			}
+			s.metrics.observe(observed.status, r.Pattern == "POST /v1/evaluate/action", outcome, time.Since(started).Seconds())
+			span.End(s.TraceLogger, "api", r.Pattern, outcome)
+		}()
 		header := r.Header.Get("Authorization")
 		token := strings.TrimPrefix(header, "Bearer ")
 		hash := sha256.Sum256([]byte(token))
@@ -155,10 +173,25 @@ func (s *Server) wrapEndpoint(fn endpoint, public bool) http.HandlerFunc {
 			case errors.As(err, &pg) && pg.Code == "23505":
 				writeJSON(w, 409, map[string]string{"error": "record already exists"})
 			default:
-				slog.Error("API transaction failed", "method", r.Method, "path", r.URL.Path, "error", err)
+				slog.Error("API transaction failed", "route", r.Pattern, "trace_id", span.TraceID)
 				writeJSON(w, 500, map[string]string{"error": "internal server error"})
 			}
 			return
+		}
+		outcome = "ok"
+		if r.Pattern == "POST /v1/evaluate/action" {
+			outcome = "error"
+			if result, ok := response.(map[string]any); ok {
+				if decision, ok := result["result"].(policy.Result); ok {
+					if decision.Decision == "ALLOW" {
+						outcome = "allow"
+					} else if decision.Decision == "DENY" {
+						outcome = "deny"
+					}
+				}
+			}
+		} else if status >= 400 {
+			outcome = "rejected"
 		}
 		writeJSON(w, status, response)
 	}
