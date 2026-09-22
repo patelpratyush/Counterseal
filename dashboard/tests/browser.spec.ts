@@ -98,15 +98,15 @@ test("real API: operator authentication, approvals, search, delegation, audit, t
   await form.getByLabel("I confirm this exact order and amount.").check();
   await form.getByRole("button", { name: "Approve exact refund" }).click();
   await expect(form.getByRole("status")).toContainText("Approved by Morgan Chen");
-  await expect(page.locator(".approval-history")).toContainText("Morgan Chen");
-  await expect(page.locator(".approval-history")).toContainText("825 units");
+  await expect(page.locator(".approval-history:visible")).toContainText("Morgan Chen");
+  await expect(page.locator(".approval-history:visible")).toContainText("825 units");
   await page.locator(".approval-ledger").screenshot({ path: "/tmp/counterseal-approvals.png" });
   await form.getByLabel("Refund amount").fill("825");
   await form.getByLabel("I confirm this exact order and amount.").check();
   await form.getByRole("button", { name: "Approve exact refund" }).click();
   await expect(form.getByRole("alert")).toContainText("already has an approval");
   await page.reload();
-  await expect(page.locator(".approval-history")).toContainText("825 units");
+  await expect(page.locator(".approval-history:visible")).toContainText("825 units");
   await page.getByRole("button", { name: "Toggle color theme" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.getByRole("tab", { name: "Delegation graph" }).click();
@@ -137,7 +137,7 @@ test("real API: operator authentication, approvals, search, delegation, audit, t
   await page.goto(`/runs/${run}`);
   await expect(page.getByRole("heading", { name: "View decisions, without approving" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Approve exact refund" })).toHaveCount(0);
-  await expect(page.locator(".approval-history")).toContainText("Morgan Chen");
+  await expect(page.locator(".approval-history:visible")).toContainText("Morgan Chen");
   await page.getByRole("button", { name: "Sign out" }).click();
   await page.goto(`/runs/${run}`);
   await expect(page).toHaveURL(/\/login$/);

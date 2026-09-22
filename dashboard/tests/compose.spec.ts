@@ -27,8 +27,8 @@ test("container dashboard displays and verifies a Java workflow", async ({ page 
   await form.getByLabel("I confirm this exact order and amount.").check();
   await form.getByRole("button", { name: "Approve exact refund" }).click();
   await expect(form.getByRole("status")).toContainText("Approved by Local Operator");
-  await expect(page.locator(".approval-history")).toContainText("825 units");
-  await expect(page.locator(".approval-history")).toContainText("Verified operator");
+  await expect(page.locator(".approval-history:visible")).toContainText("825 units");
+  await expect(page.locator(".approval-history:visible")).toContainText("Verified operator");
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login$/);
   expect(errors).toEqual([]);
