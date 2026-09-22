@@ -16,6 +16,8 @@ See `prd.md` for the full product spec. Implemented slices include the Obligatio
 core, the monotonic-delegation policy engine with CEL approval conditions,
 a PostgreSQL-backed control API with scoped approvals and audit records,
 an MCP tool gateway, a Java/Spring Boot workflow integration, and a Next.js dashboard.
+The optional [live-model demo](docs/live-model.md) lets OpenAI propose tool calls
+while Counterseal enforces scope and named operator approvals.
 
 ## Build
 
@@ -161,7 +163,7 @@ bash scripts/test-postgres.sh bash scripts/smoke-gateway.sh
 
 The [Java/Spring Boot integration](integrations/java-workflow/README.md) runs
 Support → Billing → Notification with signed delegation and a separate MCP
-gateway for each agent. The Java workflow is deterministic and requires no model
+gateway for each agent. The default Java workflow is deterministic and requires no model
 service or API key. Refunds and notifications are simulated.
 
 The CLI persists workflow stages and receipts. [Durable recovery](docs/workflow-recovery.md)
