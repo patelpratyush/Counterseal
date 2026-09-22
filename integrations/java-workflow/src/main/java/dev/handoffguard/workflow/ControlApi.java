@@ -36,9 +36,17 @@ public final class ControlApi implements AutoCloseable {
     }
 
     public JsonNode request(String method, String path, JsonNode body, int expected) {
+        try (var trace = Trace.start("control.request")) {
+            var result = requestTraced(method, path, body, expected, trace.header());
+            trace.outcome("ok");
+            return result;
+        }
+    }
+
+    private JsonNode requestTraced(String method, String path, JsonNode body, int expected, String traceparent) {
         if (!path.startsWith("/v1/") || path.contains("..")) throw new IllegalArgumentException("Invalid API path");
         var builder = HttpRequest.newBuilder(base.resolve(path)).timeout(Duration.ofSeconds(20))
-                .header("Authorization", "Bearer " + token).header("Content-Type", "application/json");
+                .header("traceparent", traceparent).header("Authorization", "Bearer " + token).header("Content-Type", "application/json");
         builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody()
                 : HttpRequest.BodyPublishers.ofString(JSON.writeValueAsString(body)));
         try {

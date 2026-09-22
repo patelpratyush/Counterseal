@@ -224,3 +224,10 @@ Statistics include runs, evaluated handoffs, blocked handoffs, blocked tool acti
 and distinct policy versions referenced by stored envelopes. They cover the whole
 workspace regardless of search/filter. Policy versions are not an active-policy
 registry. The endpoint accepts an operator session or the service bearer token.
+
+## Operational visibility
+
+`GET /metrics` accepts the service token and exposes fixed-label Prometheus counters
+and an authorization latency histogram. Enable JSON spans with `COUNTERSEAL_TRACE=1`.
+Action audit events include trace/span IDs. See the [runbook](observability.md) for
+metric definitions, trace propagation, privacy boundaries, and scrape examples.

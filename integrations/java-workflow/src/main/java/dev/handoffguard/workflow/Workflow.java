@@ -71,8 +71,9 @@ public class Workflow implements AutoCloseable {
     }
 
     public synchronized Result run() {
-        try {
+        try (var trace = Trace.start("workflow.run")) {
             start();
+            trace.run(runId);
             for (var stage : Stage.values()) {
                 if (receipts.containsKey(stage)) continue;
                 if (!envelopes.containsKey(stage)) transition(Stage.values()[stage.ordinal() - 1], stage);
@@ -80,18 +81,21 @@ public class Workflow implements AutoCloseable {
             }
             var audit = api.post("/v1/audit/" + runId + "/verify", null, 200);
             if (!"VALID".equals(audit.path("status").asText())) throw new IllegalStateException("Audit verification failed");
+            trace.outcome("ok");
             return new Result(runId, receipts(), audit, List.copyOf(events));
         } catch (RuntimeException error) { failed = true; throw error; }
     }
 
     /** Stop before attempting Billing, so an operator can approve the exact refund in the console. */
     public synchronized Map<String, Object> prepareApproval() {
-        try {
+        try (var trace = Trace.start("workflow.prepare")) {
             start();
+            trace.run(runId);
             executeProposal(Stage.SUPPORT);
             transition(Stage.SUPPORT, Stage.BILLING);
             var proposed = proposedArguments(Stage.BILLING);
             if (!arguments(Stage.BILLING).equals(proposed)) throw new IllegalStateException("Approval proposal differs from the requested refund");
+            trace.outcome("ok");
             return Map.of("status", "AWAITING_OPERATOR_APPROVAL", "run_id", runId,
                     "envelope_id", envelopes.get(Stage.BILLING).path("id").asText(),
                     "arguments", proposed);
@@ -238,7 +242,7 @@ public class Workflow implements AutoCloseable {
                     "resources", Map.of("orders", "/order_id"), "data_classes", List.of("payment_metadata")))));
             var gateway = new GatewaySession(binary, List.of("gateway", "--config", config.toString(),
                     "--agent", stage.agent, "--envelope", envelopes.get(stage).path("id").asText(),
-                    "--api-url", baseUrl, "--", binary, "demo-mcp"), Map.of("HANDOFFGUARD_API_TOKEN", token));
+                    "--api-url", baseUrl, "--", binary, "demo-mcp"), Map.of("HANDOFFGUARD_API_TOKEN", token, "COUNTERSEAL_TRACE", System.getenv().getOrDefault("COUNTERSEAL_TRACE", "0")));
             gateways.put(stage, gateway);
             if (!gateway.tools().equals(List.of(stage.tool))) throw new IllegalStateException("Unexpected gateway tool surface");
         } catch (RuntimeException error) { throw new IllegalStateException("Cannot prepare gateway session", error); }

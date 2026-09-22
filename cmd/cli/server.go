@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -46,6 +47,9 @@ func newServerCmd() *cobra.Command {
 			return err
 		}
 		api.AllowDemoApprovals = demoApprovals
+		if os.Getenv("COUNTERSEAL_TRACE") == "1" {
+			api.TraceLogger = slog.New(slog.NewJSONHandler(cmd.ErrOrStderr(), nil))
+		}
 		httpServer := &http.Server{Addr: addr, Handler: api.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 20 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 		listener, err := net.Listen("tcp", addr)
 		if err != nil {

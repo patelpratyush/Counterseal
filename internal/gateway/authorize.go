@@ -14,6 +14,7 @@ import (
 
 	"handoffguard/internal/policy"
 	"handoffguard/internal/strictjson"
+	"handoffguard/internal/telemetry"
 )
 
 type Action struct {
@@ -76,6 +77,9 @@ func (a *HTTPAuthorizer) Authorize(ctx context.Context, action Action) (Authoriz
 	}
 	req.Header.Set("Authorization", "Bearer "+a.token)
 	req.Header.Set("Content-Type", "application/json")
+	if parent := telemetry.Current(ctx).Header(); parent != "" {
+		req.Header.Set("traceparent", parent)
+	}
 	response, err := a.client.Do(req)
 	if err != nil {
 		return decision, fmt.Errorf("authorization service unavailable")

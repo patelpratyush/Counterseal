@@ -20,7 +20,7 @@ public final class GatewaySession implements AutoCloseable {
         var parameters = ServerParameters.builder(binary).args(arguments).env(environment).build();
         var transport = new StdioClientTransport(parameters, McpJsonDefaults.getMapper());
         // Never forward arbitrary upstream stderr into application logs.
-        transport.setStdErrorHandler(line -> {});
+        transport.setStdErrorHandler(Trace::gatewayLine);
         client = McpClient.sync(transport).requestTimeout(Duration.ofSeconds(35)).build();
         try { client.initialize(); }
         catch (RuntimeException error) { close(); throw error; }
@@ -29,7 +29,12 @@ public final class GatewaySession implements AutoCloseable {
     public List<String> tools() { return client.listTools().tools().stream().map(tool -> tool.name()).toList(); }
     public CallToolResult call(String name, Map<String, Object> arguments) {
         if (closed) throw new IllegalStateException("Gateway is closed");
-        return client.callTool(CallToolRequest.builder(name).arguments(arguments).build());
+        try (var trace = Trace.start("mcp.tool")) {
+            var result = client.callTool(CallToolRequest.builder(name).arguments(arguments)
+                    .meta(Map.of("traceparent", trace.header())).build());
+            trace.outcome(Boolean.TRUE.equals(result.isError()) ? "error" : "ok");
+            return result;
+        }
     }
     public boolean isClosed() { return closed; }
     @Override public void close() {

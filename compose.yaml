@@ -24,6 +24,7 @@ services:
     environment:
       HANDOFFGUARD_DATABASE_URL: postgresql://handoffguard:${HG_POSTGRES_PASSWORD:?Missing database password}@db:5432/handoffguard?sslmode=disable
       HANDOFFGUARD_API_TOKEN: ${HG_API_TOKEN:?Missing API token}
+      COUNTERSEAL_TRACE: ${COUNTERSEAL_TRACE:-0}
       HANDOFFGUARD_OPERATOR_PASSWORD: ${HG_DASHBOARD_PASSWORD:?Missing initial operator password}
     volumes:
       - signing-keys:/data
@@ -70,6 +71,7 @@ services:
     environment:
       HANDOFFGUARD_SERVER_URL: http://127.0.0.1:8080
       HANDOFFGUARD_API_TOKEN: ${HG_API_TOKEN:?Missing API token}
+      COUNTERSEAL_TRACE: ${COUNTERSEAL_TRACE:-0}
     volumes:
       - workflow-state:/data/workflows
     depends_on:

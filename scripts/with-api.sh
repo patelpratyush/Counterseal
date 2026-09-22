@@ -28,6 +28,7 @@ demo_args=()
 if [[ "${HG_TEST_DEMO_APPROVALS:-0}" == 1 ]]; then demo_args+=(--allow-demo-approvals); fi
 "$HANDOFFGUARD_BINARY" server --key "$work/key.priv" --addr 127.0.0.1:0 "${demo_args[@]}" >"$work/server.log" 2>&1 &
 api_pid=$!
+export HANDOFFGUARD_TEST_API_LOG="$work/server.log"
 export HANDOFFGUARD_SERVER_URL
 HANDOFFGUARD_SERVER_URL="$(api_url_from_log "$api_pid" "$work/server.log")"
 export HANDOFFGUARD_OPERATOR_PASSWORD="$(openssl rand -hex 16)"

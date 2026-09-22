@@ -139,3 +139,10 @@ Use `--live-model` with `OPENAI_API_KEY` and `OPENAI_MODEL` to propose each stag
 through OpenAI Responses. The same gateway, approval UI, and durable checkpoints
 still enforce execution. See the [live-model guide](../../docs/live-model.md) for
 allowed, denied, and prepare/approve/resume demonstrations and verification limits.
+
+## Trace a workflow
+
+Set `COUNTERSEAL_TRACE=1` on both the API and Java launcher to record JSON spans
+across Java, its MCP gateways, and the control API. Correlation uses MCP metadata
+and the HTTP `traceparent` header; arguments and credentials are omitted from spans.
+See [operational visibility](../../docs/observability.md) for log and metrics commands.
