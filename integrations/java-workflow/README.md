@@ -35,8 +35,9 @@ java -jar integrations/java-workflow/target/handoffguard-workflow.jar --resume -
 `--prepare-approval` exits successfully with an `AWAITING_OPERATOR_APPROVAL` result.
 `--approve-demo-refund` is no longer accepted. See the [operator guide](../../docs/operator-accounts.md).
 Attempting a high refund without approval still fails. Refunds and notifications are simulated.
-All runs are deterministic, with no LLM, API key, or billable request. The former
-Python integration's optional live-model mode is not implemented in Java.
+By default runs are deterministic and require no model credentials or billable
+requests. The optional [live-model mode](../../docs/live-model.md) uses Java to
+request proposals from OpenAI and still enforces every call through Counterseal.
 
 ## Durable recovery
 
@@ -131,3 +132,10 @@ Run `./compose.sh up` followed by `./compose.sh demo` from the repository root t
 build and execute this application without installing a JDK or Maven on the host.
 The demo image includes the Go gateway binary and runs as a non-root user. See
 [the Docker guide](../../docs/docker.md) for the full stack and approval examples.
+
+## Live model proposals
+
+Use `--live-model` with `OPENAI_API_KEY` and `OPENAI_MODEL` to propose each stage
+through OpenAI Responses. The same gateway, approval UI, and durable checkpoints
+still enforce execution. See the [live-model guide](../../docs/live-model.md) for
+allowed, denied, and prepare/approve/resume demonstrations and verification limits.

@@ -26,6 +26,8 @@ public class Workflow implements AutoCloseable {
     private final Map<Stage, JsonNode> receipts = new EnumMap<>(Stage.class);
     private final Map<Stage, GatewaySession> gateways = new EnumMap<>(Stage.class);
     private final EnumSet<Stage> attempted = EnumSet.noneOf(Stage.class);
+    private ToolProposer proposer;
+    private final Map<Stage, JsonNode> proposals = new EnumMap<>(Stage.class);
     private final List<Event> events = new ArrayList<>();
     private String runId;
     private String pending = "";
@@ -74,7 +76,7 @@ public class Workflow implements AutoCloseable {
             for (var stage : Stage.values()) {
                 if (receipts.containsKey(stage)) continue;
                 if (!envelopes.containsKey(stage)) transition(Stage.values()[stage.ordinal() - 1], stage);
-                execute(stage, arguments(stage));
+                executeProposal(stage);
             }
             var audit = api.post("/v1/audit/" + runId + "/verify", null, 200);
             if (!"VALID".equals(audit.path("status").asText())) throw new IllegalStateException("Audit verification failed");
@@ -86,16 +88,24 @@ public class Workflow implements AutoCloseable {
     public synchronized Map<String, Object> prepareApproval() {
         try {
             start();
-            execute(Stage.SUPPORT, arguments(Stage.SUPPORT));
+            executeProposal(Stage.SUPPORT);
             transition(Stage.SUPPORT, Stage.BILLING);
+            var proposed = proposedArguments(Stage.BILLING);
+            if (!arguments(Stage.BILLING).equals(proposed)) throw new IllegalStateException("Approval proposal differs from the requested refund");
             return Map.of("status", "AWAITING_OPERATOR_APPROVAL", "run_id", runId,
                     "envelope_id", envelopes.get(Stage.BILLING).path("id").asText(),
-                    "arguments", arguments(Stage.BILLING));
+                    "arguments", proposed);
         } catch (RuntimeException error) { failed = true; throw error; }
     }
 
     synchronized void start() {
         ensureOpen();
+        if (proposer == null && !proposals.isEmpty()) {
+            for (var stage : Stage.values()) {
+                if (!receipts.containsKey(stage) && !proposals.containsKey(stage))
+                    throw new IllegalStateException("Resume this model workflow with --live-model; no deterministic fallback is allowed");
+            }
+        }
         if (started) throw new IllegalStateException("Create a new Workflow for each run");
         started = true;
         if (runId != null) {
@@ -172,9 +182,13 @@ public class Workflow implements AutoCloseable {
     }
 
     public synchronized JsonNode execute(Stage stage, Map<String, Object> arguments) {
+        if (!arguments(stage).equals(arguments)) throw new IllegalArgumentException("Tool arguments differ from the authorized request");
+        return executeChecked(stage, arguments);
+    }
+
+    private JsonNode executeChecked(Stage stage, Map<String, Object> arguments) {
         ensureOpen();
         if (!envelopes.containsKey(stage)) throw new IllegalStateException("Stage has not been delegated");
-        if (!arguments(stage).equals(arguments)) throw new IllegalArgumentException("Tool arguments differ from the authorized request");
         if (attempted.contains(stage)) throw new IllegalStateException("This workflow stage has already been attempted");
         try {
             if (!gateways.containsKey(stage)) connect(stage);
@@ -230,6 +244,45 @@ public class Workflow implements AutoCloseable {
         } catch (RuntimeException error) { throw new IllegalStateException("Cannot prepare gateway session", error); }
     }
 
+    synchronized void useModel(ToolProposer proposer) {
+        ensureOpen();
+        if (started) throw new IllegalStateException("Configure the model before starting");
+        this.proposer = java.util.Objects.requireNonNull(proposer);
+    }
+
+    private Map<String, Object> proposedArguments(Stage stage) {
+        var expected = arguments(stage);
+        if (!proposals.containsKey(stage)) {
+            if (proposer == null) return expected;
+            var proposal = proposer.propose(stage, expected);
+            validateProposal(expected, proposal);
+            proposals.put(stage, JSON.valueToTree(proposal));
+            events.add(new Event("model_proposed", runId, stage));
+            checkpoint(); // Pin the exact proposal before any tool call or human approval.
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> proposal = JSON.convertValue(proposals.get(stage), Map.class);
+        validateProposal(expected, proposal);
+        return proposal;
+    }
+
+    static void validateProposal(Map<String, Object> expected, Map<String, Object> proposal) {
+        if (proposal == null || !proposal.keySet().equals(expected.keySet())
+                || !(proposal.get("order_id") instanceof String order) || !order.matches("[0-9]{1,32}"))
+            throw new IllegalStateException("Invalid model proposal fields");
+        // Order scope is independently enforced by the gateway; business values remain pinned.
+        for (var field : expected.keySet()) {
+            if (!field.equals("order_id") && !expected.get(field).equals(proposal.get(field)))
+                throw new IllegalStateException("Model changed the requested amount or receipt");
+        }
+    }
+
+    private void executeProposal(Stage stage) {
+        var proposal = proposedArguments(stage);
+        if (arguments(stage).equals(proposal)) execute(stage, proposal);
+        else executeChecked(stage, proposal);
+    }
+
     public synchronized String runId() { return runId; }
     public synchronized Map<Stage, JsonNode> receipts() { return copies(receipts); }
     public synchronized Map<Stage, JsonNode> envelopes() { return copies(envelopes); }
@@ -251,7 +304,7 @@ public class Workflow implements AutoCloseable {
         if (store == null) return;
         try {
             store.save(new WorkflowStore.Snapshot(1, baseUrl, amount, approve, runId, envelopes, receipts,
-                    attempted, events, approvalGranted, pending));
+                    attempted, events, approvalGranted, pending, proposals));
         } catch (RuntimeException error) { failed = true; throw error; }
     }
 
@@ -271,6 +324,7 @@ public class Workflow implements AutoCloseable {
         attempted.addAll(saved.attempted());
         events.addAll(saved.events());
         approvalGranted = saved.approvalGranted();
+        if (saved.proposals() != null) proposals.putAll(saved.proposals());
         if ((runId == null) != envelopes.isEmpty() || (runId != null && !runId.matches("run_[a-zA-Z0-9_-]+"))
                 || !attempted.equals(receipts.keySet()) || !envelopes.keySet().containsAll(receipts.keySet())
                 || (approvalGranted && (!approve || !envelopes.containsKey(Stage.BILLING)))) {

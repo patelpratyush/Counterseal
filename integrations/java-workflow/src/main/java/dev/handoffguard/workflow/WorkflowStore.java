@@ -20,7 +20,13 @@ import static dev.handoffguard.workflow.ControlApi.JSON;
 final class WorkflowStore implements AutoCloseable {
     record Snapshot(int version, String baseUrl, int amount, boolean approve, String runId,
                     Map<Stage, JsonNode> envelopes, Map<Stage, JsonNode> receipts,
-                    Set<Stage> attempted, List<Workflow.Event> events, boolean approvalGranted, String pending) {}
+                    Set<Stage> attempted, List<Workflow.Event> events, boolean approvalGranted, String pending, Map<Stage, JsonNode> proposals) {
+        Snapshot(int version, String baseUrl, int amount, boolean approve, String runId,
+                 Map<Stage, JsonNode> envelopes, Map<Stage, JsonNode> receipts, Set<Stage> attempted,
+                 List<Workflow.Event> events, boolean approvalGranted, String pending) {
+            this(version, baseUrl, amount, approve, runId, envelopes, receipts, attempted, events, approvalGranted, pending, Map.of());
+        }
+    }
 
     private final Path directory;
     private final FileChannel channel;

@@ -10,14 +10,19 @@ public class WorkflowApplication {
         try {
             var invocation = Invocation.parse(args);
             if (invocation.help()) {
-                System.out.println("Usage: java -jar handoffguard-workflow.jar [--amount=100] [--prepare-approval] [--state=PATH] [--scenario=workflow|gateway|server]");
+                System.out.println("Usage: java -jar handoffguard-workflow.jar [--amount=100] [--live-model] [--prepare-approval] [--state=PATH] [--scenario=workflow|gateway|server]");
                 System.out.println("Resume: java -jar handoffguard-workflow.jar --resume --state=PATH (uses saved amount and approval choice)");
                 return;
             }
             String scenario = invocation.scenario();
             try (var context = new SpringApplicationBuilder(WorkflowApplication.class).logStartupInfo(false).run(args)) {
                 if (scenario.equals("workflow")) {
-                    try (var workflow = context.getBean(WorkflowFactory.class).create(invocation)) {
+                    try (var model = invocation.liveModel() ? new OpenAiProposer(
+                            context.getEnvironment().getProperty("OPENAI_API_KEY"),
+                            context.getEnvironment().getProperty("OPENAI_MODEL"),
+                            context.getEnvironment().getProperty("COUNTERSEAL_MODEL_TASK", "Complete the requested commerce stage.")) : null;
+                         var workflow = context.getBean(WorkflowFactory.class).create(invocation)) {
+                        if (model != null) workflow.useModel(model);
                         System.out.println(JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
                                 invocation.prepareApproval() ? workflow.prepareApproval() : workflow.run()));
                     }
