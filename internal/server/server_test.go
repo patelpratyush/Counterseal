@@ -30,7 +30,7 @@ type fixture struct {
 	key  ed25519.PrivateKey
 }
 
-func setup(t *testing.T) *fixture {
+func setup(t testing.TB) *fixture {
 	t.Helper()
 	url := os.Getenv("HANDOFFGUARD_TEST_DATABASE_URL")
 	if url == "" {
@@ -105,7 +105,7 @@ func (f *fixture) request(method, path string, body any) (int, map[string]any, e
 	}
 	return response.StatusCode, value, nil
 }
-func (f *fixture) must(t *testing.T, method, path string, body any, status int) map[string]any {
+func (f *fixture) must(t testing.TB, method, path string, body any, status int) map[string]any {
 	t.Helper()
 	code, value, err := f.request(method, path, body)
 	if err != nil || code != status {
