@@ -49,8 +49,9 @@ transactions; human approvals use individual local accounts and role checks.
 
 The Java workflow has an optional [live-model proposal path](live-model.md); its
 default remains deterministic. [Operational visibility](observability.md) provides local structured traces and
-Prometheus metrics. Remaining work includes collector/alert deployment, concurrent
-API benchmarks, and a polished voiceover.
+Prometheus metrics. [Concurrent API and larger-policy benchmarks](benchmarks.md) now include raw
+measurements and workload limits. Remaining work includes collector/alert deployment,
+dedicated-host performance characterization, and a polished voiceover.
 
 Update 2026-09-21: the Java CLI now supports [durable local workflow recovery](workflow-recovery.md)
 with atomic checkpoints, an exclusive process lock, saved receipts, and refusal to

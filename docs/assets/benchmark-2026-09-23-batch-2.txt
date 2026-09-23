@@ -1,0 +1,107 @@
+Measured at: 2026-09-23T23:04:57Z
+cd4d69528c867542b79521b777d25af018fc0076
+go version go1.26.5 darwin/amd64
+postgres (PostgreSQL) 18.6 (Homebrew)
+Darwin x86_64
+goos: darwin
+goarch: amd64
+pkg: handoffguard/internal/policy
+cpu: Intel(R) Core(TM) i7-8557U CPU @ 1.70GHz
+BenchmarkDiffScale/entries=10/allow-8         	    3981	    131323 ns/op	   51917 B/op	     981 allocs/op
+BenchmarkDiffScale/entries=10/allow-8         	    4465	    132759 ns/op	   51914 B/op	     981 allocs/op
+BenchmarkDiffScale/entries=10/allow-8         	    4177	    130485 ns/op	   51912 B/op	     981 allocs/op
+BenchmarkDiffScale/entries=10/deny-8          	    4594	    130204 ns/op	   52056 B/op	     985 allocs/op
+BenchmarkDiffScale/entries=10/deny-8          	    4479	    132602 ns/op	   52056 B/op	     985 allocs/op
+BenchmarkDiffScale/entries=10/deny-8          	    4190	    131651 ns/op	   52059 B/op	     985 allocs/op
+BenchmarkDiffScale/entries=100/allow-8        	    2180	    278840 ns/op	   99199 B/op	    1017 allocs/op
+BenchmarkDiffScale/entries=100/allow-8        	    2020	    284517 ns/op	   99202 B/op	    1017 allocs/op
+BenchmarkDiffScale/entries=100/allow-8        	    2137	    286813 ns/op	   99197 B/op	    1017 allocs/op
+BenchmarkDiffScale/entries=100/deny-8         	    1911	    303134 ns/op	   99344 B/op	    1021 allocs/op
+BenchmarkDiffScale/entries=100/deny-8         	    1860	    301217 ns/op	   99340 B/op	    1021 allocs/op
+BenchmarkDiffScale/entries=100/deny-8         	    1964	    302217 ns/op	   99341 B/op	    1021 allocs/op
+BenchmarkDiffScale/entries=1000/allow-8       	      86	   7066974 ns/op	  799832 B/op	    1085 allocs/op
+BenchmarkDiffScale/entries=1000/allow-8       	      86	   7099168 ns/op	  799803 B/op	    1085 allocs/op
+BenchmarkDiffScale/entries=1000/allow-8       	      88	   7045817 ns/op	  799837 B/op	    1085 allocs/op
+BenchmarkDiffScale/entries=1000/deny-8        	      86	   7092950 ns/op	  799943 B/op	    1089 allocs/op
+BenchmarkDiffScale/entries=1000/deny-8        	      85	   7028208 ns/op	  799999 B/op	    1089 allocs/op
+BenchmarkDiffScale/entries=1000/deny-8        	      84	   7030155 ns/op	  799970 B/op	    1089 allocs/op
+PASS
+ok  	handoffguard/internal/policy	11.452s
+goos: darwin
+goarch: amd64
+pkg: handoffguard/internal/server
+cpu: Intel(R) Core(TM) i7-8557U CPU @ 1.70GHz
+BenchmarkAuthorizationHTTP/resources=10/workers=1-8         	     500	   1195738 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	      1133 p50-us	      1615 p95-us	      1980 p99-us	       836.3 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=10/workers=1-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=10/workers=1-8         	     500	   1265100 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	      1211 p50-us	      1710 p95-us	      2122 p99-us	       790.5 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=10/workers=1-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=10/workers=1-8         	     500	   1335324 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	      1285 p50-us	      1830 p95-us	      2096 p99-us	       748.9 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=10/workers=1-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=10/workers=8-8         	     500	   1249649 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	      9313 p50-us	     11978 p95-us	     29425 p99-us	       800.2 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=10/workers=8-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=10/workers=8-8         	     500	   1266628 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	      9379 p50-us	     12190 p95-us	     31247 p99-us	       789.5 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=10/workers=8-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=10/workers=8-8         	     500	   1258646 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	      9204 p50-us	     13794 p95-us	     28880 p99-us	       794.5 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=10/workers=8-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=10/workers=32-8        	     500	   1198869 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	     35414 p50-us	     52989 p95-us	     75214 p99-us	       834.1 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=10/workers=32-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=10/workers=32-8        	     500	   1190938 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	     35271 p50-us	     50424 p95-us	     70771 p99-us	       839.7 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=10/workers=32-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=10/workers=32-8        	     500	   1170984 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	     34677 p50-us	     49628 p95-us	     71558 p99-us	       854.0 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=10/workers=32-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=1000/workers=1-8       	     500	   2201868 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	      2124 p50-us	      2888 p95-us	      3164 p99-us	       454.2 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=1000/workers=1-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=1000/workers=1-8       	     500	   2236314 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	      2123 p50-us	      2960 p95-us	      3244 p99-us	       447.2 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=1000/workers=1-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=1000/workers=1-8       	     500	   2244867 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	      2117 p50-us	      2960 p95-us	      3158 p99-us	       445.5 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=1000/workers=1-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=1000/workers=8-8       	     500	   2131170 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	     16391 p50-us	     18980 p95-us	     35005 p99-us	       469.2 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=1000/workers=8-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=1000/workers=8-8       	     500	   2162743 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	     16564 p50-us	     19604 p95-us	     37813 p99-us	       462.4 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=1000/workers=8-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=1000/workers=8-8       	     500	   2206611 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	     16937 p50-us	     20902 p95-us	     34899 p99-us	       453.2 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=1000/workers=8-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=1000/workers=32-8      	     500	   2065342 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	     62760 p50-us	     78276 p95-us	    102253 p99-us	       484.2 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=1000/workers=32-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=1000/workers=32-8      	     500	   1991027 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	     60545 p50-us	     74442 p95-us	     97524 p99-us	       502.3 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=1000/workers=32-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+BenchmarkAuthorizationHTTP/resources=1000/workers=32-8      	     500	   2006835 ns/op	         0 errors	       250.0 expected-allow	       250.0 expected-deny	     61241 p50-us	     72721 p95-us	     95101 p99-us	       498.3 req/s
+--- BENCH: BenchmarkAuthorizationHTTP/resources=1000/workers=32-8
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+    benchmark_test.go:77: PostgreSQL pool MaxConns=8; sequential warmup=10; fresh schema per case
+PASS
+ok  	handoffguard/internal/server	19.144s

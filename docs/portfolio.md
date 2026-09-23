@@ -81,7 +81,7 @@ payment system or as preventing every form of prompt injection.
 
 - [Hosted CI](https://github.com/patelpratyush/Counterseal/actions/runs/35475480843): backend, Java/gateway, dashboard, policy Action, Docker, and aggregate gate passed.
 - Java unit and integration tests cover success, denial, checkpoint integrity, and abrupt process-crash recovery.
-- [Policy benchmark](benchmarks.md): median 0.150 ms per in-process comparison on the documented laptop and fixture.
+- [API and policy benchmarks](benchmarks.md): 18,000 verified HTTP authorization requests across concurrent workloads, plus larger-policy comparisons. Raw runs and host-variability limits are published.
 - Protected `main` requires a passing CI gate and a pull request.
 
 Suggested resume bullets:
