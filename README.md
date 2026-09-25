@@ -9,7 +9,7 @@ agent's permissions; attempts to expand them are rejected and recorded.
 
 Explore the [architecture and demo](docs/portfolio.md), watch the
 [browser walkthrough](docs/assets/walkthrough.webm), or read the
-[measured policy benchmark](docs/benchmarks.md).
+[API and policy benchmarks](docs/benchmarks.md).
 
 The CLI command is `handoffguard` (see [compatibility identifiers](#compatibility-identifiers)).
 See `prd.md` for the full product spec. Implemented slices include the Obligation Envelope

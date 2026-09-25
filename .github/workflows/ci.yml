@@ -61,6 +61,10 @@ jobs:
         run: |
           go test ./internal/policy -run '^$' -fuzz '^FuzzDelegationCannotExpandAuthority$' -fuzztime 10s
           go test ./internal/policy -run '^$' -fuzz '^FuzzApprovalThresholdCannotWeaken$' -fuzztime 10s
+      - name: Benchmark correctness smoke (no timing threshold)
+        run: |
+          go test ./internal/policy -run '^$' -bench '^BenchmarkDiffScale$' -benchtime=1x -count=1
+          go test ./internal/server -run '^$' -bench '^BenchmarkAuthorizationHTTP$' -benchtime=20x -count=1 -timeout=3m
       - name: Build CLI
         run: go build -trimpath -o "$RUNNER_TEMP/handoffguard" ./cmd/cli
 
